@@ -7,6 +7,8 @@ from ui.board import Board
 class App:
     def __init__(self):
         self._running = True
+        self.fps_clock = None
+        self._FPS_LIMIT = 0
         self._display_surf = None
         self.size = self.width, self.height = 800, 670
         self.board = Board()
@@ -15,6 +17,8 @@ class App:
         pygame.init()
         self._display_surf = pygame.display.set_mode(self.size, pygame.HWSURFACE | pygame.DOUBLEBUF)
         self._running = True
+        self.fps_clock = pygame.time.Clock()
+        self._FPS_LIMIT = 30
 
         # init gameobjects
         self.board.init_board()
@@ -57,6 +61,7 @@ class App:
             for event in pygame.event.get():
                 self.on_event(event)
             self.on_loop()
+            self.fps_clock.tick(self._FPS_LIMIT)
             self.on_render()
         self.on_cleanup()
 
