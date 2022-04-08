@@ -8,7 +8,7 @@ class App:
     def __init__(self):
         self._running = True
         self._display_surf = None
-        self.size = self.width, self.height = 800, 800
+        self.size = self.width, self.height = 800, 670
         self.board = Board()
 
     def on_init(self):
