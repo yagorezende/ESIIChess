@@ -10,12 +10,14 @@ class App:
         self.fps_clock = None
         self._display_surf = None
         self._FPS_LIMIT = 60
-        self.size = self.width, self.height = 800, 670
+        self.size = self.width, self.height = 640, 640
         self.board = Board()
 
     def on_init(self):
         pygame.init()
-        self._display_surf = pygame.display.set_mode(self.size, pygame.HWSURFACE | pygame.DOUBLEBUF)
+        self._display_surf = pygame.display.set_mode(
+            self.size, pygame.HWSURFACE | pygame.DOUBLEBUF
+        )
         self._running = True
         self.fps_clock = pygame.time.Clock()
 
