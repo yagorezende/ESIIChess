@@ -7,14 +7,19 @@ from ui.board import Board
 class App:
     def __init__(self):
         self._running = True
+        self.fps_clock = None
         self._display_surf = None
-        self.size = self.width, self.height = 800, 800
+        self._FPS_LIMIT = 60
+        self.size = self.width, self.height = 640, 640
         self.board = Board()
 
     def on_init(self):
         pygame.init()
-        self._display_surf = pygame.display.set_mode(self.size, pygame.HWSURFACE | pygame.DOUBLEBUF)
+        self._display_surf = pygame.display.set_mode(
+            self.size, pygame.HWSURFACE | pygame.DOUBLEBUF
+        )
         self._running = True
+        self.fps_clock = pygame.time.Clock()
 
         # init gameobjects
         self.board.init_board()
@@ -22,6 +27,7 @@ class App:
         return True
 
     def on_event(self, event):
+        self.board.on_event(event)
         if event.type == pygame.QUIT:
             self._running = False
 
@@ -58,6 +64,7 @@ class App:
                 self.on_event(event)
             self.on_loop()
             self.on_render()
+            self.fps_clock.tick(self._FPS_LIMIT)
         self.on_cleanup()
 
 
