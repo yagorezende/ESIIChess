@@ -1,6 +1,36 @@
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 
 # NOTE - indexes are (column, row)
+
+# NOTE - mapping the movements for each chess piece
+_pieces_movements_deltas: Dict[str, List[Tuple[int, int]]] = {
+    "king": [
+        (-1,-1),( 0,-1),( 1,-1),
+        (-1, 0),        ( 1, 0),
+        (-1, 1),( 0, 1),( 1, 1),
+        (-2, 0),        ( 2, 0)  # NOTE - occur when castling
+    ],
+    "queen":
+        _v_direction_deltas  + _h_direction_deltas + \
+        _d1_direction_deltas + _d2_direction_deltas,
+    "rook":
+        _v_direction_deltas  + _h_direction_deltas,
+    "bishop":
+        _d1_direction_deltas + _d2_direction_deltas,
+    "knight": [
+        (-1,-2),(-2,-1),
+        ( 1,-2),( 2,-1),
+        ( 1, 2),( 2, 1),
+        (-1, 2),(-2, 1)
+    ],
+    "pawn": [
+        ( 0,-1),( 0,-2),
+        ( 0, 1),( 0, 2),
+        (-1,-1),( 1,-1),  # NOTE - when capturing
+        (-1, 1),( 1, 1)   # NOTE - when capturing
+    ]
+}
+
 
 def gen_piece_positions(_type: str, cur_col: int, cur_row: int) -> List[Tuple[int, int]]:
     """
