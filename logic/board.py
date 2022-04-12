@@ -2,25 +2,23 @@ from typing import Dict, List, Tuple
 
 # NOTE - indexes are (column, row)
 
+_range_all_board = range(-7,8)
+
 # NOTE - deltas for all possible vertical positions
 _v_direction_deltas: List[Tuple[int, int]] = \
-    [(int(0),-i) for i in range(1,8)] + \
-    [(int(0), i) for i in range(8)]
+    [(int(0), i) for i in _range_all_board]
 
 # NOTE - deltas for all possible horizontal positions
 _h_direction_deltas: List[Tuple[int, int]] = \
-    [(-i, int(0)) for i in range(1,8)] + \
-    [( i, int(0)) for i in range(8)]
+    [(i, int(0)) for i in _range_all_board]
 
 # NOTE - deltas for all possible positions on the main diagonal
 _d1_direction_deltas: List[Tuple[int, int]] = \
-    [(-i,-i) for i in range(1,8)] + \
-    [( i, i) for i in range(8)]
+    [( i, i) for i in _range_all_board]
 
 # NOTE - deltas for all possible positions on the secondary diagonal
 _d2_direction_deltas: List[Tuple[int, int]] = \
-    [( i,-i) for i in range(1,8)] + \
-    [(-i, i) for i in range(8)]
+    [(-i, i) for i in _range_all_board]
 
 # NOTE - mapping the movements for each chess piece
 _pieces_movements_deltas: Dict[str, List[Tuple[int, int]]] = {
