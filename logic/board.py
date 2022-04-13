@@ -69,3 +69,8 @@ def gen_piece_positions(_type: str, cur_col: int, cur_row: int) -> List[Tuple[in
            ( new_col != cur_col or new_row != cur_row ):
             res.append( (new_col, new_row) )
     return res
+
+if __name__ == '__main__':
+    for piece in _pieces_movements_deltas.keys():
+        positions = gen_piece_positions(piece, 4, 4)
+        print(f'''piece: {piece}\n\t{len(positions)} new position{'s' if len(positions) else ''}\n\t{positions}''')
