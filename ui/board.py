@@ -1,5 +1,5 @@
 from typing import List, Tuple
-
+from logic.rule_machine import RuleMachine
 import pygame
 
 TILE_SIZE = 80  # px
@@ -24,7 +24,14 @@ class ChessPiece:
         if self.catch_click(event) and self._is_over():
             print(f"Click on {self._type} {self.color} on position {self.get_board_pos()}")
             board_state = self.board.get_board_matrix()  # this call gets the board state
+
+            positions = self.board.rule_machine.get_valid_moves(self, self.board.get_board_matrix())
+            print(f'''piece: {self._type} {self.color}\n\t{len(positions)} new position{'s' if len(positions) else ''}\n\t{positions}''')
+
             self._event_keeper = None  # release the event keeper
+
+    def get_type(self) -> str:
+        return self._type
 
     def catch_click(self, event) -> bool:
         if event.type == pygame.MOUSEBUTTONUP:
@@ -60,6 +67,7 @@ class Board:
     def __init__(self):
         self.grid: List[BoardTile] = []
         self.pieces: List[ChessPiece] = []
+        self.rule_machine = RuleMachine()
         self.offset = 0
 
     def init_board(self):
