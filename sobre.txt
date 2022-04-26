@@ -1,0 +1,36 @@
+(1) Por que o tabuleiro não é apenas um png simples, mas uma coleção de objetos que representam cada casa?
+
+(2) Por que não uma simples matriz que represente o tabuleiro internamente?
+
+board = [
+	['br1', 'bn1', 'bb1', 'bq', 'bk', 'bb2', 'bn2', 'br2'], # br1 = black root 1; bb2 = black bishop 2 etc.
+	['bp1', 'bp2', 'bp3', 'bp4', 'bp5', 'bp6', 'bp7', 'bp8'],
+	...
+	]
+
+O árbitro (objeto Referee) poderia avaliar os possíveis movimentos de uma peça passadas apenas a matriz e a posição da peça.
+
+(3) Por que testar o evento de clique em cada peça em vez de simplesmente inferir a peça que foi clicada?
+
+(4) Pelo que entendi, a função gen_piece_positions retorna as possíveis posições futuras de uma peça independentemente de fatores como xeque, roque ou casas ocupadas. Não seria mais simples testar as casas individualmente?
+
+bispo:
+
+res = [ ]
+x, y = pos(bispo)
+
+while is_valid(x, y) # up-right
+	res.append((x, y))
+	x += 1
+	y += 1
+
+while is_valid(x, y): # down-right
+	...
+
+while is_valid(x, y): # up-left
+	...
+
+while is_valid(x, y): # down-left
+	...
+
+
