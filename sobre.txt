@@ -1,36 +1,7 @@
-(1) Por que o tabuleiro não é apenas um png simples, mas uma coleção de objetos que representam cada casa?
+Por que não usar deltas para todas as peças?
 
-(2) Por que não uma simples matriz que represente o tabuleiro internamente?
+Nos casos de torre, bispo, ou rainha, haverá um número bem maior de expressões checadas do que na abordagem com while. Também seria preciso tomar cuidado com bloqueios, checando sempre da peça para as bordas. A abordagem com while é mais simples, aparentemente.
 
-board = [
-	['br1', 'bn1', 'bb1', 'bq', 'bk', 'bb2', 'bn2', 'br2'], # br1 = black root 1; bb2 = black bishop 2 etc.
-	['bp1', 'bp2', 'bp3', 'bp4', 'bp5', 'bp6', 'bp7', 'bp8'],
-	...
-	]
+Por que a matriz do tabuleiro já não possui os sprites?
 
-O árbitro (objeto Referee) poderia avaliar os possíveis movimentos de uma peça passadas apenas a matriz e a posição da peça.
-
-(3) Por que testar o evento de clique em cada peça em vez de simplesmente inferir a peça que foi clicada?
-
-(4) Pelo que entendi, a função gen_piece_positions retorna as possíveis posições futuras de uma peça independentemente de fatores como xeque, roque ou casas ocupadas. Não seria mais simples testar as casas individualmente?
-
-bispo:
-
-res = [ ]
-x, y = pos(bispo)
-
-while is_valid(x, y) # up-right
-	res.append((x, y))
-	x += 1
-	y += 1
-
-while is_valid(x, y): # down-right
-	...
-
-while is_valid(x, y): # up-left
-	...
-
-while is_valid(x, y): # down-left
-	...
-
-
+A matriz do tabuleiro representa o estado do jogo, é utilizada pelo árbitro e pela IA. Fazer os sprites ficarem nesta matriz dificultaria  consideravelmente a implementação de uma função heurística de avaliação de estados.

@@ -27,10 +27,11 @@ class App:
         return True
 
     def on_event(self, event):
-        self.board.on_event(event)
         if event.type == pygame.QUIT:
             self._running = False
-
+        if event.type == pygame.MOUSEBUTTONUP:
+            self.board.on_click()
+        
     def on_loop(self):
         """
         Use this method to process the next step of the game
