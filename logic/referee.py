@@ -4,50 +4,48 @@ from logic.const import DELTAS
 class Referee():
 
     @staticmethod
-    def check_bounds(pos): # checks whether position exists in the board
+    def check_bounds(pos) -> bool: # checks whether position exists in the board
         return 0 <= pos[0] <= 7 and 0 <= pos[1] <= 7
 
     @staticmethod
-    def probe(board_matrix:list, position:tuple, factor:tuple, enemy_color:str): # returns possible moves in one direction
+    def probe(board_matrix:list, pos:tuple, factor:tuple, enemy_color:str) -> list: # returns possible moves in one direction
         space = []
-        auxRow, auxColumn = position[0] + factor[0], position[1] + factor[1]
-        while Referee.check_bounds((auxRow, auxColumn)) and not board_matrix[auxRow][auxColumn]: # while void spaces exist...
-            space.append((auxRow, auxColumn))
-            auxRow, auxColumn = auxRow + factor[0], auxColumn + factor[1]
-        if Referee.check_bounds((auxRow, auxColumn)):
-            if board_matrix[auxRow][auxColumn][0] == enemy_color: # is last space occupied by enemy?
-                space.append((auxRow, auxColumn))
+        new_row, new_col = pos[0] + factor[0], pos[1] + factor[1]
+        while Referee.check_bounds((new_row, new_col)) and not board_matrix[new_row][new_col]: # while void spaces exist...
+            space.append((new_row, new_col))
+            new_row, new_col = new_row + factor[0], new_col + factor[1]
+        if Referee.check_bounds((new_row, new_col)):
+            if board_matrix[new_row][new_col][0] == enemy_color: # is last space occupied by enemy?
+                space.append((new_row, new_col))
         return space
     
     @staticmethod
-    def get_possible_diagonal_moves(board_matrix:list, position:tuple):
-        piece = board_matrix[position[0]][position[1]]
+    def get_possible_diagonal_moves(board_matrix:list, pos:tuple) -> list:
+        piece = board_matrix[pos[0]][pos[1]]
         if piece[0] == 'w':
             enemy_color = 'b'
         else:
             enemy_color = 'w'
-        diag_space = []
-        diag_space += Referee.probe(board_matrix, position, (-1, 1), enemy_color) # up-right
-        diag_space += Referee.probe(board_matrix, position, (-1, -1), enemy_color) # up-left
-        diag_space += Referee.probe(board_matrix, position, (1, 1), enemy_color) # down-right
-        diag_space += Referee.probe(board_matrix, position, (1, -1), enemy_color) # down-left
+        diag_space = Referee.probe(board_matrix, pos, (-1, 1), enemy_color) # up-right
+        diag_space += Referee.probe(board_matrix, pos, (-1, -1), enemy_color) # up-left
+        diag_space += Referee.probe(board_matrix, pos, (1, 1), enemy_color) # down-right
+        diag_space += Referee.probe(board_matrix, pos, (1, -1), enemy_color) # down-left
         return diag_space
 
     @staticmethod
-    def get_possible_cross_moves(board_matrix:list, position:tuple):
-        if board_matrix[position[0]][position[1]][0] == 'w':
+    def get_possible_cross_moves(board_matrix:list, pos:tuple) -> list:
+        if board_matrix[pos[0]][pos[1]][0] == 'w':
             enemy_color = 'b'
         else:
             enemy_color = 'w'
-        diag_space = []
-        diag_space += Referee.probe(board_matrix, position, (-1, 0), enemy_color) # up
-        diag_space += Referee.probe(board_matrix, position, (1, 0), enemy_color) # down
-        diag_space += Referee.probe(board_matrix, position, (0, 1), enemy_color) # right
-        diag_space += Referee.probe(board_matrix, position, (0, -1), enemy_color) # left
-        return diag_space
+        cross_space = Referee.probe(board_matrix, pos, (-1, 0), enemy_color) # up
+        cross_space += Referee.probe(board_matrix, pos, (1, 0), enemy_color) # down
+        cross_space += Referee.probe(board_matrix, pos, (0, 1), enemy_color) # right
+        cross_space += Referee.probe(board_matrix, pos, (0, -1), enemy_color) # left
+        return cross_space
     
     @staticmethod
-    def get_pawn_moves(board_matrix:list, pos:tuple, bottomup_orientation:bool):
+    def get_pawn_moves(board_matrix:list, pos:tuple, bottomup_orientation:bool) -> list:
         space = []
         if bottomup_orientation:
             key = 'pawnUp'
@@ -59,11 +57,11 @@ class Referee():
         return space
     
     @staticmethod
-    def get_rook_moves(board_matrix:list, pos:tuple):
+    def get_rook_moves(board_matrix:list, pos:tuple) -> list:
         return Referee.get_possible_cross_moves(board_matrix, pos)
     
     @staticmethod
-    def get_knight_moves(board_matrix:list, pos:tuple):
+    def get_knight_moves(board_matrix:list, pos:tuple) -> list:
         space = []
         if board_matrix[pos[0]][pos[1]][0] == 'w':
             enemy_color = 'b'
@@ -80,19 +78,19 @@ class Referee():
         return space
     
     @staticmethod
-    def get_bishop_moves(board_matrix:list, pos:tuple):
+    def get_bishop_moves(board_matrix:list, pos:tuple) -> list:
         return Referee.get_possible_diagonal_moves(board_matrix, pos)
 
     @staticmethod
-    def get_queen_moves(board_matrix:list, pos:tuple):
+    def get_queen_moves(board_matrix:list, pos:tuple) -> list:
         return Referee.get_possible_cross_moves(board_matrix, pos) + Referee.get_possible_diagonal_moves(board_matrix, pos)
 
     @staticmethod
-    def get_king_moves(board_matrix:list, pos:tuple): # TODO
+    def get_king_moves(board_matrix:list, pos:tuple) -> list: # TODO
         return []
 
     @staticmethod
-    def get_possible_moves(board_matrix:list, pos:tuple, bottomup_orientation:bool = True) -> tuple: # inform the possible moves for a single piece
+    def get_possible_moves(board_matrix:list, pos:tuple, bottomup_orientation:bool = True) -> list: # inform the possible moves for a single piece
         piece = board_matrix[pos[0]][pos[1]]
         if not piece:
             return []
