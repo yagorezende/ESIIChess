@@ -5,6 +5,7 @@
 * João Banquinho
 * Michel Ziade
 * Yago Rezende
+* Felipe Souza
 
 ## Iterações
 TODO: list

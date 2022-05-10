@@ -1,0 +1,7 @@
+Por que não usar deltas para todas as peças?
+
+Nos casos de torre, bispo, ou rainha, haverá um número bem maior de expressões checadas do que na abordagem com while. Também seria preciso tomar cuidado com bloqueios, checando sempre da peça para as bordas. A abordagem com while é mais simples, aparentemente.
+
+Por que a matriz do tabuleiro já não possui os sprites?
+
+A matriz do tabuleiro representa o estado do jogo, é utilizada pelo árbitro e pela IA. Fazer os sprites ficarem nesta matriz dificultaria  consideravelmente a implementação de uma função heurística de avaliação de estados.
