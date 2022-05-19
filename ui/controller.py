@@ -65,16 +65,28 @@ class Controller:
                 print(f"Could not import b{order[i]}.png")
 
     def transform(self, x, y):
-        self.board_matrix[x][y] = self.selected
-        aux = self.pieces[self.selected].get_board_pos()
-        self.board_matrix[aux[0]][aux[1]] = None
-        self.pieces[self.selected].move((y * TILE_SIZE, x * TILE_SIZE))
-        self.selected = None
+        piece = self.pieces[self.selected]
+        piece_pos = piece.get_board_pos()
+        type = piece.get_type()
+
+        self.board_matrix[x][y] = self.selected # update matrix
+        self.board_matrix[piece_pos[0]][piece_pos[1]] = None # update matrix
+
+        piece.move((y * TILE_SIZE, x * TILE_SIZE)) # move sprite
+
+        if type == 'k' or type == 'r': # update instance
+            piece.has_moved = True
+        elif type == 'p':
+            pawn_row = piece.get_board_pos()[1]
+            if abs(y - pawn_row) == 2:
+                piece.has_jumped = True
+
+        self.selected = None # unselect piece
         print('\nBoard Matrix:\n')
         show_board_matrix(self.board_matrix)
         print()
         
-    def on_click(self):  # TODO: callings to referee
+    def on_click(self):
 
         y, x = pygame.mouse.get_pos()
         x //= TILE_SIZE
