@@ -1,7 +1,7 @@
 import pygame
 from pygame.locals import *
 
-from ui.board import Board
+from ui.controller import Controller
 
 
 class App:
@@ -11,7 +11,7 @@ class App:
         self._display_surf = None
         self._FPS_LIMIT = 60
         self.size = self.width, self.height = 640, 640
-        self.board = Board()
+        self.controller = Controller()
 
     def on_init(self):
         pygame.init()
@@ -22,7 +22,7 @@ class App:
         self.fps_clock = pygame.time.Clock()
 
         # init gameobjects
-        self.board.init_board()
+        self.controller.init_board()
 
         return True
 
@@ -30,7 +30,7 @@ class App:
         if event.type == pygame.QUIT:
             self._running = False
         if event.type == pygame.MOUSEBUTTONUP:
-            self.board.on_click()
+            self.controller.on_click()
         
     def on_loop(self):
         """
@@ -45,7 +45,7 @@ class App:
         :return: None
         """
         # display the board first
-        self.board.on_render(self._display_surf)
+        self.controller.on_render(self._display_surf)
         pygame.display.flip()
 
     def on_cleanup(self):

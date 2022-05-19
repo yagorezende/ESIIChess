@@ -14,12 +14,18 @@ class ChessPiece:
         self.active = True
         self.offset = offset
         self._event_keeper = None
-    
+
+        if _type == 'p':
+            self.has_jumped = False
+
+        elif _type == 'k' or _type == 'r':
+            self.has_moved = False
+
     def move(self, pos:tuple):
         self.x, self.y = pos
 
     def get_board_pos(self) -> Tuple[int, int]:
-        return int(self.x / TILE_SIZE - self.offset), int(self.y / TILE_SIZE - self.offset)
+        return int(self.y / TILE_SIZE - self.offset), int(self.x / TILE_SIZE - self.offset)
 
     def get_type(self) -> str:
         return self._type
