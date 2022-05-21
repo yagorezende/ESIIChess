@@ -1,6 +1,6 @@
 from typing import Dict
 from logic.const import DELTAS
-from ui.piece import ChessPiece
+from ui.board import ChessPiece
 
 class Referee():
 
@@ -16,6 +16,60 @@ class Referee():
 
     def check_void(self, pos) -> bool: # checks whether a slot is empty
         return self.check_bounds(pos) and not self.board_matrix[pos[0]][pos[1]]
+
+    def check_enemy_presence(self, pos:tuple, enemy_color:str) -> bool:
+        return self.check_bounds(pos) and self.board_matrix[pos[0]][pos[1]] and self.board_matrix[pos[0]][pos[1]][0] == enemy_color
+
+    def check_en_passant(self, pawn_pos:tuple, enemy_pawn_pos:tuple, factor:int, enemy_color:str) -> bool:
+        if self.check_enemy_presence(enemy_pawn_pos, enemy_color):
+            aux = self.board_matrix[enemy_pawn_pos[0]][enemy_pawn_pos[1]]
+            if aux[1] == 'p' and self.pieces[aux].has_jumped:
+                return self.check_void((pawn_pos[0] + factor, enemy_pawn_pos[1]))
+        return False
+
+    def check_threat(self, pos, enemy_color, bottomup_orientation = True):
+        # look for enemy pawns
+        factors = [(-1, 1), (-1, -1)] if bottomup_orientation else [(1, 1), (1, -1)]
+        for factor in factors:
+            new_pos = (pos[0] + factor[0], pos[1] + factor[1])
+            if self.check_enemy_presence(new_pos, enemy_color): # is last space occupied by enemy?
+                if self.board_matrix[new_pos[0]][new_pos[1]][1] == 'p':
+                    print('threatened by pawn')
+                    return True
+        # print('pawns checked')
+        # look for enemy knights
+        for factor in DELTAS['knight']:
+            new_pos = (pos[0] + factor[0], pos[1] + factor[1])
+            if self.check_enemy_presence(new_pos, enemy_color):
+                if self.board_matrix[new_pos[0]][new_pos[1]][1] == 'n':
+                    print('threatened by knight')
+                    return True
+        # print('knights checked')
+        # look for enemy rooks or queens
+        factors = [(1, 0), (-1, 0), (0, 1), (0, -1)]
+        for factor in factors:
+            new_pos = (pos[0] + factor[0], pos[1] + factor[1])
+            while self.check_void(new_pos): # while void spaces exist...
+                new_pos = (new_pos[0] + factor[0], new_pos[1] + factor[1])
+            if self.check_enemy_presence(new_pos, enemy_color): # is last space occupied by enemy?
+                type = self.board_matrix[new_pos[0]][new_pos[1]][1]
+                if type == 'r' or type == 'q':
+                    print('threatened by queen/rook')
+                    return True
+        # print('queen/rooks checked')
+        # look for enemy bishops or queens
+        factors = [(1, 1), (1, -1), (-1, 1), (-1, -1)]
+        for factor in factors:
+            new_pos = (pos[0] + factor[0], pos[1] + factor[1])
+            while self.check_void(new_pos): # while void spaces exist...
+                new_pos = (new_pos[0] + factor[0], new_pos[1] + factor[1])
+            if self.check_enemy_presence(new_pos, enemy_color): # is last space occupied by enemy?
+                type = self.board_matrix[new_pos[0]][new_pos[1]][1]
+                if type == 'b' or type == 'q':
+                    print('threatened by queen/bishop')
+                    return True
+        # print('queen/bishops checked')
+        return False
 
     def probe(self, pos:tuple, factor:tuple, enemy_color:str) -> list: # returns possible moves in one direction
         space = []
@@ -49,16 +103,6 @@ class Referee():
             if self.check_enemy_presence(new_pos, enemy_color) or self.check_void(new_pos): # free space
                 space.append(new_pos)
         return space
-
-    def check_enemy_presence(self, pos:tuple, enemy_color:str) -> bool:
-        return self.check_bounds(pos) and self.board_matrix[pos[0]][pos[1]] and self.board_matrix[pos[0]][pos[1]][0] == enemy_color
-
-    def check_en_passant(self, pawn_pos:tuple, enemy_pawn_pos:tuple, factor:int, enemy_color:str) -> bool:
-        if self.check_enemy_presence(enemy_pawn_pos, enemy_color):
-            aux = self.board_matrix[enemy_pawn_pos[0]][enemy_pawn_pos[1]]
-            if aux[1] == 'p' and self.pieces[aux].has_jumped:
-                return self.check_void((pawn_pos[0] + factor, enemy_pawn_pos[1] + factor))
-        return False
 
     def get_pawn_moves(self, piece:str, bottomup_orientation:bool) -> list:
         space = []
@@ -103,16 +147,38 @@ class Referee():
     def get_queen_moves(self, pos:tuple) -> list:
         return self.get_possible_cross_moves(pos) + self.get_possible_diagonal_moves(pos)
 
-    def get_king_moves(self, pos:tuple) -> list: # TODO
+    def get_king_moves(self, pos:tuple) -> list:
         space = self.get_delta_moves(pos, 'king')
-        # TODO: include castling
+        enemy_color = 'b' if self.board_matrix[pos[0]][pos[1]][0] == 'w' else 'w'
+        if self.check_threat(pos, enemy_color): # king is currently threatened, he can't castle
+            return space
+
+        king = self.pieces[self.board_matrix[pos[0]][pos[1]]]
+        if not king.has_moved:
+            # small castle
+            new_pos = (pos[0], pos[1] + 1)
+            while self.check_void(new_pos) and not self.check_threat(new_pos, enemy_color):
+                new_pos = (new_pos[0], new_pos[1] + 1)
+            if not self.check_void(new_pos):
+                piece = self.pieces[self.board_matrix[new_pos[0]][new_pos[1]]]
+                if piece.color != enemy_color and piece.type == 'r' and not piece.has_moved:
+                    space.append((new_pos[0], new_pos[1] - 1))
+            # big castle
+            new_pos = (pos[0], pos[1] - 1)
+            while self.check_void(new_pos) and not self.check_threat(new_pos, enemy_color):
+                new_pos = (new_pos[0], new_pos[1] - 1)
+            if not self.check_void(new_pos):
+                piece = self.pieces[self.board_matrix[new_pos[0]][new_pos[1]]]
+                if piece.color != enemy_color and piece.type == 'r' and not piece.has_moved:
+                    space.append((new_pos[0], new_pos[1] + 2))        
+            
         return space
 
     def get_possible_moves(self, piece:str, bottomup_orientation:bool = True) -> list: # inform the possible moves for a single piece
         pos = self.pieces[piece].get_board_pos()
         if not self.board_matrix[pos[0]][pos[1]]:
             return []
-        type = self.pieces[piece].get_type()
+        type = self.pieces[piece].type
         if type == 'p': # it's a pawn
             return self.get_pawn_moves(piece, bottomup_orientation)
         if type == 'r': # it's a rook
@@ -124,5 +190,5 @@ class Referee():
         if type == 'q': # it's the queen
             return self.get_queen_moves(pos)
         if type == 'k': # it's the king
-            return self.get_king_moves(piece)
+            return self.get_king_moves(pos)
         return None

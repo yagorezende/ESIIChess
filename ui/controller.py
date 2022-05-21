@@ -4,27 +4,13 @@ import pygame
 from logic.referee import Referee
 from logic.tools import show_board_matrix
 
-from ui.piece import ChessPiece
-
-class BoardTile:
-    def __init__(self, dark=True, x=0, y=0, offset=0):
-        if dark:
-            self.sprite = pygame.image.load("assets/images/tile-dark.png").convert()
-        else:
-            self.sprite = pygame.image.load("assets/images/tile-light.png").convert()
-        self.x = x
-        self.y = y
-        self.offset = offset
-
-    def render(self):
-        return self.sprite, (self.y + self.offset, self.x + self.offset)
-
+from ui.board import BoardTile, ChessPiece
 
 class Controller:
     def __init__(self):
-        self.grid: List[BoardTile] = []
+        self.grid:List[BoardTile] = []
         self.pieces:Dict[str, ChessPiece] = {}
-        self.board_matrix = [
+        self.board_matrix:List[List[str]] = [
             ['br1', 'bn2', 'bb3', 'bq4', 'bk5', 'bb6', 'bn7', 'br8'],
             ['bp1', 'bp2', 'bp3', 'bp4', 'bp5', 'bp6', 'bp7', 'bp8'],		
 			[None] * 8,
@@ -36,7 +22,7 @@ class Controller:
 		]
         self.referee = Referee(self.board_matrix, self.pieces)
         self.selected:ChessPiece = None
-        self.player_color = 'w'
+        self.player_color:str = 'w'
         self.offset = 0
 
     def init_board(self):
@@ -51,63 +37,80 @@ class Controller:
         order = ["r", "n", "b", "q", "k", "b", "n", "r"]
         for i in range(8):
             # white
-            self.pieces['wp' + str(i+1)] = ChessPiece(self, x=i * TILE_SIZE, y=6 * TILE_SIZE, offset=self.offset)
+            self.pieces['wp' + str(i+1)] = ChessPiece(x=i * TILE_SIZE, y=6 * TILE_SIZE, offset=self.offset)
             try:
-                self.pieces['w' + order[i] + str(i+1)] = ChessPiece(self, _type=order[i], x=i * TILE_SIZE, y=7 * TILE_SIZE, offset=self.offset)
+                self.pieces['w' + order[i] + str(i+1)] = ChessPiece(type=order[i], x=i * TILE_SIZE, y=7 * TILE_SIZE, offset=self.offset)
             except Exception as e:
                 print(f"Could not import w{order[i]}.png")
 
             # black
-            self.pieces['bp' + str(i+1)] = ChessPiece(self, color='b', x=i * TILE_SIZE, y=1 * TILE_SIZE, offset=self.offset)
+            self.pieces['bp' + str(i+1)] = ChessPiece(color='b', x=i * TILE_SIZE, y=1 * TILE_SIZE, offset=self.offset)
             try:
-                self.pieces['b' + order[i] + str(i+1)] = ChessPiece(self, color='b', _type=order[i], x=i * TILE_SIZE, y=0 * TILE_SIZE, offset=self.offset)
+                self.pieces['b' + order[i] + str(i+1)] = ChessPiece(color='b', type=order[i], x=i * TILE_SIZE, y=0 * TILE_SIZE, offset=self.offset)
             except Exception as e:
                 print(f"Could not import b{order[i]}.png")
 
-    def transform(self, x, y):
+    def transform(self, r, c):
         piece = self.pieces[self.selected]
         piece_pos = piece.get_board_pos()
-        type = piece.get_type()
 
-        self.board_matrix[x][y] = self.selected # update matrix
+        self.board_matrix[r][c] = self.selected # update matrix
         self.board_matrix[piece_pos[0]][piece_pos[1]] = None # update matrix
 
-        piece.move((y * TILE_SIZE, x * TILE_SIZE)) # move sprite
-
-        if type == 'k' or type == 'r': # update instance
+        if piece.type == 'k':
+            rook = None
+            displacement = c - piece_pos[1]
+            if displacement == 2: # the player is trying small castle
+                print('small castle')
+                self.board_matrix[r][c-1] = self.board_matrix[r][c+1] # update matrix
+                self.board_matrix[r][c+1] = None # update matrix
+                rook = self.pieces[self.board_matrix[r][c-1]]
+                rook.move(((c-1) * TILE_SIZE, r * TILE_SIZE))
+            if displacement == -2: # the player is trying big castle
+                print('big castle')
+                self.board_matrix[r][c+1] = self.board_matrix[r][c-2] # update matrix
+                self.board_matrix[r][c-2] = None # update matrix
+                rook = self.pieces[self.board_matrix[r][c+1]]
+                rook.move(((c+1) * TILE_SIZE, r * TILE_SIZE))
+            if rook:
+                rook.has_moved = True
+            piece.has_moved = True # update instance
+            print('a king has moved')
+        elif piece.type == 'r': # update instance
             piece.has_moved = True
-        elif type == 'p':
-            pawn_row = piece.get_board_pos()[1]
-            if abs(y - pawn_row) == 2:
+            print('a rook has moved')
+        elif piece.type == 'p': # update instance
+            if abs(c - piece_pos[0]) == 2:
                 piece.has_jumped = True
+                print('double step pawn')
 
-        self.selected = None # unselect piece
+        piece.move((c * TILE_SIZE, r * TILE_SIZE)) # move sprite
+
         print('\nBoard Matrix:\n')
         show_board_matrix(self.board_matrix)
         print()
         
     def on_click(self):
-
-        y, x = pygame.mouse.get_pos()
-        x //= TILE_SIZE
-        y //= TILE_SIZE
-        target = self.board_matrix[x][y]
-        print(f"Click on {(x, y)}")
+        print('-' * 50)
+        c, r = pygame.mouse.get_pos()
+        r //= TILE_SIZE
+        c //= TILE_SIZE
+        target = self.board_matrix[r][c]
+        print(f"Click on {(r, c)}")
 
         if target:  # click on piece
             if target[0] == self.player_color:  # if it's a player's piece
                 self.selected = target
                 print(f"Selected piece: {target}\nPossible moves: {self.referee.get_possible_moves(self.selected)}")
             elif self.selected:  # player wants to kill an enemie's piece
-                piece = self.pieces[self.board_matrix[x][y]]
-                if ((x, y) in self.referee.get_possible_moves(self.selected)):
-                    piece.active = False
-                    self.transform(x, y)
-                    return
+                if ((r, c) in self.referee.get_possible_moves(self.selected)):
+                    self.pieces[self.board_matrix[r][c]].active = False
+                    self.transform(r, c)
+                self.selected = None
         elif self.selected:  # click on empty slot, a piece was previously selected
-            if ((x, y) in self.referee.get_possible_moves(self.selected)):
-                self.transform(x, y)
-                return
+            if ((r, c) in self.referee.get_possible_moves(self.selected)):
+                self.transform(r, c)
+            self.selected = None
 
     def on_render(self, surface):
         for tile in self.grid:
