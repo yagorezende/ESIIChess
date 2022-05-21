@@ -21,7 +21,7 @@ class Controller:
             ['wr1', 'wn2', 'wb3', 'wq4', 'wk5', 'wb6', 'wn7', 'wr8']			
 		]
         self.referee = Referee(self.board_matrix, self.pieces)
-        self.selected:ChessPiece = None
+        self.selected:str = None
         self.player_color:str = 'w'
         self.offset = 0
 
