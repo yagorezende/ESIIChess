@@ -27,7 +27,7 @@ class Referee():
                 return self.check_void((pawn_pos[0] + factor, enemy_pawn_pos[1]))
         return False
 
-    def check_threat(self, pos, enemy_color, bottomup_orientation = True):
+    def check_threat(self, pos, enemy_color, bottomup_orientation = True) -> bool:
         # look for enemy pawns
         factors = [(-1, 1), (-1, -1)] if bottomup_orientation else [(1, 1), (1, -1)]
         for factor in factors:
@@ -100,14 +100,14 @@ class Referee():
         space = []
         for (i, j) in DELTAS[key]:
             new_pos = (pos[0] + i, pos[1] + j)
-            if self.check_enemy_presence(new_pos, enemy_color) or self.check_void(new_pos): # free space
+            if self.check_enemy_presence(new_pos, enemy_color) or self.check_void(new_pos):
                 space.append(new_pos)
         return space
 
     def get_pawn_moves(self, piece:str, bottomup_orientation:bool) -> list:
         space = []
         r, c = self.pieces[piece].get_board_pos()
-        if not r % 7: # is the pawn on top/bottom?
+        if r == 0 or r == 7: # is the pawn on top/bottom?
             return space
         enemy_color = 'b' if self.board_matrix[r][c][0] == 'w' else 'w'
         factor = -1 if bottomup_orientation else 1
@@ -156,18 +156,19 @@ class Referee():
         king = self.pieces[self.board_matrix[pos[0]][pos[1]]]
         if not king.has_moved:
             # small castle
-            new_pos = (pos[0], pos[1] + 1)
+            new_pos, steps = (pos[0], pos[1] + 1), 0
             while self.check_void(new_pos) and not self.check_threat(new_pos, enemy_color):
                 new_pos = (new_pos[0], new_pos[1] + 1)
-            if not self.check_void(new_pos):
+                steps += 1
+            if steps == 2 and not self.check_void(new_pos):
                 piece = self.pieces[self.board_matrix[new_pos[0]][new_pos[1]]]
                 if piece.color != enemy_color and piece.type == 'r' and not piece.has_moved:
                     space.append((new_pos[0], new_pos[1] - 1))
             # big castle
-            new_pos = (pos[0], pos[1] - 1)
+            new_pos, steps = (pos[0], pos[1] - 1), 0
             while self.check_void(new_pos) and not self.check_threat(new_pos, enemy_color):
                 new_pos = (new_pos[0], new_pos[1] - 1)
-            if not self.check_void(new_pos):
+            if steps == 3 and not self.check_void(new_pos):
                 piece = self.pieces[self.board_matrix[new_pos[0]][new_pos[1]]]
                 if piece.color != enemy_color and piece.type == 'r' and not piece.has_moved:
                     space.append((new_pos[0], new_pos[1] + 2))        
