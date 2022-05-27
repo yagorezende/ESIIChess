@@ -126,13 +126,19 @@ class Controller:
                     self.turn()
                 self.handle_highlight_hint(None, turnoff=True, pos=(r, c))
                 self.selected = None
-            # check if king is in check
+
         elif self.selected:  # click on empty slot, a piece was previously selected
             if (r, c) in self.referee.get_possible_moves(self.selected, self.turn_color == self.bottom_color):
                 self.transform(r, c)
                 self.turn()
             self.handle_highlight_hint(None, turnoff=True)
             self.selected = None
+
+        # check if king is in check
+        if self.referee.check_king_check(self.turn_color):
+            # tint the grid
+            x, y = self.pieces[f"{self.turn_color}k5"].get_board_pos()
+            self.grid[y * 8 + x].turn_red()
 
     def on_render(self, surface):
         for tile in self.grid:

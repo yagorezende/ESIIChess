@@ -8,9 +8,11 @@ class BoardTile:
         if dark:
             self.normal_sprite = pygame.image.load("assets/images/tile-dark.png").convert()
             self.highlight_sprite = pygame.image.load("assets/images/tile-dark-highlight.png").convert()
+            self.danger_sprite = pygame.image.load("assets/images/tile-dark-danger.png").convert()
         else:
             self.normal_sprite = pygame.image.load("assets/images/tile-light.png").convert()
             self.highlight_sprite = pygame.image.load("assets/images/tile-light-highlight.png").convert()
+            self.danger_sprite = pygame.image.load("assets/images/tile-light-danger.png").convert()
         self.x = x
         self.y = y
         self.offset = offset
@@ -24,7 +26,11 @@ class BoardTile:
 
     def render(self):
         return self.sprite, (self.y + self.offset, self.x + self.offset)
-        
+
+    def turn_red(self):
+        self.sprite = self.danger_sprite
+
+
 class ChessPiece:
     def __init__(self, type="p", color="w", x=0, y=0, offset=0):
         self.sprite = pygame.image.load(f"assets/images/{color}{type}.png").convert_alpha()
