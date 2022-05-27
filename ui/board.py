@@ -6,12 +6,21 @@ from logic.const import TILE_SIZE
 class BoardTile:
     def __init__(self, dark=True, x=0, y=0, offset=0):
         if dark:
-            self.sprite = pygame.image.load("assets/images/tile-dark.png").convert()
+            self.normal_sprite = pygame.image.load("assets/images/tile-dark.png").convert()
+            self.highlight_sprite = pygame.image.load("assets/images/tile-dark-highlight.png").convert()
         else:
-            self.sprite = pygame.image.load("assets/images/tile-light.png").convert()
+            self.normal_sprite = pygame.image.load("assets/images/tile-light.png").convert()
+            self.highlight_sprite = pygame.image.load("assets/images/tile-light.png").convert()
         self.x = x
         self.y = y
         self.offset = offset
+        self.sprite = self.normal_sprite
+
+    def turn_light(self, on=False):
+        if on:
+            self.sprite = self.highlight_sprite
+        else:
+            self.sprite = self.normal_sprite
 
     def render(self):
         return self.sprite, (self.y + self.offset, self.x + self.offset)
