@@ -1,11 +1,7 @@
-from typing import List
-from logic.const import TILE_SIZE
+from typing import Tuple
 import pygame
-from logic.referee import Referee
-from logic.tools import show_board_matrix
 
-from ui.piece import ChessPiece
-
+from logic.const import TILE_SIZE
 
 class BoardTile:
     def __init__(self, dark=True, x=0, y=0, offset=0):
@@ -19,96 +15,34 @@ class BoardTile:
 
     def render(self):
         return self.sprite, (self.y + self.offset, self.x + self.offset)
+        
+class ChessPiece:
+    def __init__(self, type="p", color="w", x=0, y=0, offset=0):
+        self.sprite = pygame.image.load(f"assets/images/{color}{type}.png").convert_alpha()
+        # self.board = board # why does the piece has a reference to the board?
+        # self._type = _type # why is it private?
+        self.type = type
+        self.color = color
+        self.x = x
+        self.y = y
+        self.active = True
+        self.offset = offset
+        self._event_keeper = None
 
-    def get_tile_coord(self):
-        return int(self.x / TILE_SIZE - self.offset), int(self.y / TILE_SIZE - self.offset)
+        if type == 'p':
+            self.has_jumped = False
 
+        elif type == 'k' or type == 'r':
+            self.has_moved = False
 
-class Board:
-    def __init__(self):
-        self.grid: List[BoardTile] = []
-        self.pieces = {}
-        self.matrix = [
-            ["br1", "bn2", "bb3", "bq4", "bk5", "bb6", "bn7", "br8"],
-            ["bp1", "bp2", "bp3", "bp4", "bp5", "bp6", "bp7", "bp8"],
-            [None] * 8,
-            [None] * 8,
-            [None] * 8,
-            [None] * 8,
-            ["wp1", "wp2", "wp3", "wp4", "wp5", "wp6", "wp7", "wp8"],
-            ["wr1", "wn2", "wb3", "wq4", "wk5", "wb6", "wn7", "wr8"],
-        ]
-        self.selected: ChessPiece = None
-        self.player_color = "w"
-        self.offset = 0
+    def move(self, pos:tuple):
+        self.x, self.y = pos
 
-    def init_board(self):
-        # add tiles
-        white = False
-        for i in range(8):
-            for j in range(8):
-                self.grid.append(BoardTile(white, TILE_SIZE * j, TILE_SIZE * i, self.offset))
-                white = not white
-            white = not white
-        # add pieces
-        order = ["r", "n", "b", "q", "k", "b", "n", "r"]
-        for i in range(8):
-            # white
-            self.pieces["wp" + str(i + 1)] = ChessPiece(self, x=i * TILE_SIZE, y=6 * TILE_SIZE, offset=self.offset)
-            try:
-                self.pieces["w" + order[i] + str(i + 1)] = ChessPiece(self, _type=order[i], x=i * TILE_SIZE, y=7 * TILE_SIZE, offset=self.offset)
-            except Exception as e:
-                print(f"Could not import w{order[i]}.png")
+    def get_board_pos(self) -> Tuple[int, int]:
+        return int(self.y / TILE_SIZE - self.offset), int(self.x / TILE_SIZE - self.offset)
 
-            # black
-            self.pieces["bp" + str(i + 1)] = ChessPiece(self, color="b", x=i * TILE_SIZE, y=1 * TILE_SIZE, offset=self.offset)
-            try:
-                self.pieces["b" + order[i] + str(i + 1)] = ChessPiece(self, color="b", _type=order[i], x=i * TILE_SIZE, y=0 * TILE_SIZE, offset=self.offset)
-            except Exception as e:
-                print(f"Could not import b{order[i]}.png")
+    # def get_type(self) -> str:
+    #     return self._type
 
-    def transform(self, x, y):
-        self.matrix[x][y] = self.selected
-        aux = self.pieces[self.selected].get_board_pos()
-        self.matrix[aux[1]][aux[0]] = None
-        self.pieces[self.selected].move((y * TILE_SIZE, x * TILE_SIZE))
-        self.selected = None
-        print("\nBoard Matrix:\n")
-        show_board_matrix(self.matrix)
-        print()
-
-    def on_click(self):  # TODO: callings to referee
-        y, x = pygame.mouse.get_pos()
-        x //= TILE_SIZE
-        y //= TILE_SIZE
-        target = self.matrix[x][y]
-        print(f"Click on {(x, y)}")
-
-        if target:  # click on piece
-            if target[0] == self.player_color:  # if it's a player's piece
-                self.selected = target
-                print(f"Selected piece: {target}\nPossible moves: {Referee.get_possible_moves(self.matrix, (x, y))}")
-            elif self.selected:  # player wants to kill an enemie's piece
-                aux = self.pieces[self.selected].get_board_pos()
-                if ((x, y) in Referee.get_possible_moves(self.matrix, (aux[1], aux[0]))) and self.selected[1] != "p":  # TODO arrumar movimentos do peao para apagar essa condição gambiarra!!
-                    self.pieces[self.matrix[x][y]].active = False
-                    self.transform(x, y)
-                    return
-                if self.selected[1] == "p":  # TODO arrumar movimentos do peao para apagar essa condição gambiarra!!
-                    self.pieces[self.matrix[x][y]].active = False
-                    self.transform(x, y)
-        elif self.selected:  # click on empty slot, a piece was previously selected
-            aux = self.pieces[self.selected].get_board_pos()
-            if ((x, y) in Referee.get_possible_moves(self.matrix, (aux[1], aux[0]))) and self.selected[1] != "p":  # TODO arrumar movimentos do peao para apagar essa condição gambiarra!!
-                self.transform(x, y)
-                return
-            if self.selected[1] == "p":  # TODO arrumar movimentos do peao para apagar essa condição gambiarra!!
-                self.transform(x, y)
-
-    def on_render(self, surface):
-        for tile in self.grid:
-            surface.blit(*tile.render())
-
-        for piece in self.pieces.values():
-            if piece.active:
-                surface.blit(*piece.render())
+    def render(self):
+        return self.sprite, (self.x + self.offset, self.y + self.offset)
