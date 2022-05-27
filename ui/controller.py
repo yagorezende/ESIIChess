@@ -26,6 +26,7 @@ class Controller:
         self.turn_color = 'w'
         self.bottom_color = 'w'
         self.offset = 0
+        self.highlight = []
 
     def init_board(self):
         # add tiles
@@ -115,23 +116,22 @@ class Controller:
 
         if target:  # click on piece
             if target[0] == self.turn_color:  # if it's a player's piece
+                self.handle_highlight_hint(target)
+                self.grid[c * 8 + r].turn_light(True)
                 self.selected = target
-                print(
-                    f"Selected piece: {target}\nPossible moves: {self.referee.get_possible_moves(self.selected, self.turn_color == self.bottom_color)}")
-                for pos in self.referee.get_possible_moves(self.selected, self.turn_color == self.bottom_color):
-                    x, y = pos
-                    print(f"hightlight {y*8 + x} for pos = {pos}")
-                    self.grid[y*8 + x].turn_light(True)
-            elif self.selected:  # player wants to kill an enemie's piece
-                if ((r, c) in self.referee.get_possible_moves(self.selected, self.turn_color == self.bottom_color)):
+            elif self.selected:  # the player wants to kill an enemy piece
+                if (r, c) in self.referee.get_possible_moves(self.selected, self.turn_color == self.bottom_color):
                     self.pieces[self.board_matrix[r][c]].active = False
                     self.transform(r, c)
                     self.turn()
+                self.handle_highlight_hint(None, turnoff=True, pos=(r, c))
                 self.selected = None
+            # check if king is in check
         elif self.selected:  # click on empty slot, a piece was previously selected
-            if ((r, c) in self.referee.get_possible_moves(self.selected, self.turn_color == self.bottom_color)):
+            if (r, c) in self.referee.get_possible_moves(self.selected, self.turn_color == self.bottom_color):
                 self.transform(r, c)
                 self.turn()
+            self.handle_highlight_hint(None, turnoff=True)
             self.selected = None
 
     def on_render(self, surface):
@@ -141,3 +141,19 @@ class Controller:
         for piece in self.pieces.values():
             if piece.active:
                 surface.blit(*piece.render())
+
+    def handle_highlight_hint(self, target: str, turnoff=False, pos: tuple = None):
+        if target == self.selected:
+            return
+
+        # turn off old path
+        if self.selected or turnoff:
+            for tile in self.grid:
+                tile.turn_light()
+
+        if not turnoff:
+            # turn on path
+            for pos in self.referee.get_possible_moves(target, self.turn_color == self.bottom_color):
+                x, y = pos
+                # print(f"hightlight {y * 8 + x} for pos = {pos}")
+                self.grid[y * 8 + x].turn_light(True)

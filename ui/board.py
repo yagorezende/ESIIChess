@@ -10,7 +10,7 @@ class BoardTile:
             self.highlight_sprite = pygame.image.load("assets/images/tile-dark-highlight.png").convert()
         else:
             self.normal_sprite = pygame.image.load("assets/images/tile-light.png").convert()
-            self.highlight_sprite = pygame.image.load("assets/images/tile-light.png").convert()
+            self.highlight_sprite = pygame.image.load("assets/images/tile-light-highlight.png").convert()
         self.x = x
         self.y = y
         self.offset = offset
@@ -28,8 +28,6 @@ class BoardTile:
 class ChessPiece:
     def __init__(self, type="p", color="w", x=0, y=0, offset=0):
         self.sprite = pygame.image.load(f"assets/images/{color}{type}.png").convert_alpha()
-        # self.board = board # why does the piece has a reference to the board?
-        # self._type = _type # why is it private?
         self.type = type
         self.color = color
         self.x = x
