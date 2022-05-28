@@ -22,9 +22,8 @@ class Controller:
             ['wr1', 'wn2', 'wb3', 'wq4', 'wk5', 'wb6', 'wn7', 'wr8']
         ]
         self.referee = Referee(self.board_matrix, self.pieces)
-        self.selected: str = None
-        self.turn_color = 'w'
-        self.bottom_color = 'w'
+        self.selected = None
+        self.turn_color = self.bottom_color = 'w'
         self.offset = 0
         self.highlight = []
 
@@ -105,6 +104,11 @@ class Controller:
             self.turn_color = 'b'
         else:
             self.turn_color = 'w'
+        # update pawns to avoid second chances in en passants
+        for i in range(1, 9):
+            pawn = self.pieces[self.turn_color + 'p' + str(i)]
+            if pawn.has_jumped:
+                pawn.has_jumped = False
 
     def on_click(self):
         print('-' * 50)
