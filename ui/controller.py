@@ -8,6 +8,7 @@ from ui.board import BoardTile, ChessPiece
 
 
 class Controller:
+
     def __init__(self):
         self.grid: List[BoardTile] = []
         self.pieces: Dict[str, ChessPiece] = {}
@@ -23,7 +24,6 @@ class Controller:
         ]
         self.referee = Referee(self.board_matrix, self.pieces)
         self.selected = None
-        self.turn_color = self.bottom_color = 'w'
         self.offset = 0
         self.highlight = []
 
@@ -63,13 +63,11 @@ class Controller:
             rook = None
             displacement = c - piece_pos[1]
             if displacement == 2:  # the player is trying a small castle
-                print('small castle')
                 self.board_matrix[r][c - 1] = self.board_matrix[r][c + 1]  # update matrix
                 self.board_matrix[r][c + 1] = None  # update matrix
                 rook = self.pieces[self.board_matrix[r][c - 1]]
                 rook.move(((c - 1) * TILE_SIZE, r * TILE_SIZE))
             if displacement == -2:  # the player is trying a big castle
-                print('big castle')
                 self.board_matrix[r][c + 1] = self.board_matrix[r][c - 2]  # update matrix
                 self.board_matrix[r][c - 2] = None  # update matrix
                 rook = self.pieces[self.board_matrix[r][c + 1]]
@@ -82,33 +80,22 @@ class Controller:
         elif piece.type == 'p':  # update instance
             if abs(r - piece_pos[0]) == 2:
                 piece.has_jumped = True
-                print('double step pawn')
             else:
                 piece.has_jumped = False
                 if c != piece_pos[1] and not self.board_matrix[r][c]:  # en passant
-                    print('en passant')
                     self.pieces[self.board_matrix[piece_pos[0]][c]].active = False
                     self.board_matrix[piece_pos[0]][c] = None
+                    self.referee.kill_flag = True
 
         self.board_matrix[r][c] = self.selected  # update matrix
         self.board_matrix[piece_pos[0]][piece_pos[1]] = None  # update matrix
+        self.referee.move_counter += 1
 
         piece.move((c * TILE_SIZE, r * TILE_SIZE))  # move sprite
 
         print('\nBoard Matrix:\n')
         show_board_matrix(self.board_matrix)
         print()
-
-    def turn(self):
-        if self.turn_color == 'w':
-            self.turn_color = 'b'
-        else:
-            self.turn_color = 'w'
-        # update pawns to avoid second chances in en passants
-        for i in range(1, 9):
-            pawn = self.pieces[self.turn_color + 'p' + str(i)]
-            if pawn.has_jumped:
-                pawn.has_jumped = False
 
     def on_click(self):
         print('-' * 50)
@@ -119,30 +106,29 @@ class Controller:
         print(f"Click on {(r, c)}")
 
         if target:  # click on piece
-            if target[0] == self.turn_color:  # if it's a player's piece
+            if target[0] == self.referee.turn_color:  # if it's a player's piece
                 self.handle_highlight_hint(target)
                 self.grid[c * 8 + r].turn_light(True)
                 self.selected = target
             elif self.selected:  # the player wants to kill an enemy piece
-                if (r, c) in self.referee.get_possible_moves(self.selected, self.turn_color == self.bottom_color):
+                if (r, c) in self.referee.get_possible_moves(self.selected):
                     self.pieces[self.board_matrix[r][c]].active = False
                     self.transform(r, c)
-                    self.turn()
-                self.handle_highlight_hint(None, turnoff=True, pos=(r, c))
+                    self.referee.turn()
+                    self.referee.kill_flag = True
+                self.handle_highlight_hint(None, turnoff = True, pos=(r, c))
                 self.selected = None
 
         elif self.selected:  # click on empty slot, a piece was previously selected
-            if (r, c) in self.referee.get_possible_moves(self.selected, self.turn_color == self.bottom_color):
+            if (r, c) in self.referee.get_possible_moves(self.selected):
                 self.transform(r, c)
-                self.turn()
-            self.handle_highlight_hint(None, turnoff=True)
+                self.referee.turn()
+                if self.selected[1] != 'p':
+                    self.referee.no_progression_counter += 1
+                else:
+                    self.referee.no_progression_counter = 0
+            self.handle_highlight_hint(None, turnoff = True)
             self.selected = None
-
-        # check if king is in check
-        if self.referee.check_king_check(self.turn_color):
-            # tint the grid
-            x, y = self.pieces[f"{self.turn_color}k5"].get_board_pos()
-            self.grid[y * 8 + x].turn_red()
 
     def on_render(self, surface):
         for tile in self.grid:
@@ -152,7 +138,7 @@ class Controller:
             if piece.active:
                 surface.blit(*piece.render())
 
-    def handle_highlight_hint(self, target: str, turnoff=False, pos: tuple = None):
+    def handle_highlight_hint(self, target: str, turnoff = False, pos: tuple = None):
         if target == self.selected:
             return
 
@@ -163,7 +149,7 @@ class Controller:
 
         if not turnoff:
             # turn on path
-            for pos in self.referee.get_possible_moves(target, self.turn_color == self.bottom_color):
+            for pos in self.referee.get_possible_moves(target):
                 x, y = pos
                 # print(f"hightlight {y * 8 + x} for pos = {pos}")
                 self.grid[y * 8 + x].turn_light(True)

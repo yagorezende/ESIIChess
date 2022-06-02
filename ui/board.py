@@ -54,8 +54,5 @@ class ChessPiece:
     def get_board_pos(self) -> Tuple[int, int]:
         return int(self.y / TILE_SIZE - self.offset), int(self.x / TILE_SIZE - self.offset)
 
-    # def get_type(self) -> str:
-    #     return self._type
-
     def render(self):
         return self.sprite, (self.x + self.offset, self.y + self.offset)
