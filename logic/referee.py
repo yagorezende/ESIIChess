@@ -1,5 +1,5 @@
 from typing import Dict
-from logic.const import DELTAS, NO_PROGRESSION_LIMIT, REPETITIONS_FOR_DRAW, Status
+from logic.const import DELTAS, NO_PROGRESSION_LIMIT, REPETITIONS_FOR_DRAW, INITIAL_STATE_1, INITIAL_STATE_2, Status
 from logic.tools import add_tuples, letter_to_color
 from ui.board import ChessPiece
 
@@ -7,13 +7,16 @@ class Referee():
 
     def __init__(self, board_matrix: list, pieces: dict, bottom_color: str = 'w') -> None:
         self.board_matrix = board_matrix
-        self.states_counter: Dict[str, int] = {}
         self.pieces: Dict[str, ChessPiece] = pieces
         self.turn_color = 'w'
         self.bottom_color = bottom_color
         self.no_progression_counter = 0
         self.kill_flag = False
         self.status = Status.NORMAL
+        if bottom_color == 'w':
+            self.states_counter: Dict[str, int] = {INITIAL_STATE_1 : 1}
+        else:
+            self.states_counter: Dict[str, int] = {INITIAL_STATE_2 : 1}
 
     def enemy_color(self) -> str:
         return 'b' if self.turn_color == 'w' else 'w'
