@@ -29,3 +29,5 @@ DELTAS: Dict[str, List[Tuple[int, int]]] = {
 TILE_SIZE = 80
 REPETITIONS_FOR_DRAW = 3
 NO_PROGRESSION_LIMIT = 50
+INITIAL_STATE_1 = 'brbnbbbqbkbbbnbrbpbpbpbpbpbpbpbp00000000000000000000000000000000wpwpwpwpwpwpwpwpwrwnwbwqwkwbwnwr'
+INITIAL_STATE_2 = 'wrwnwbwqwkwbwnwrwpwpwpwpwpwpwpwp00000000000000000000000000000000bpbpbpbpbpbpbpbpbrbnbbbqbkbbbnbr'
