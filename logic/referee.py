@@ -7,13 +7,11 @@ class Referee():
 
     def __init__(self, board_matrix: list, pieces: dict, bottom_color: str = 'w') -> None:
         self.board_matrix = board_matrix
+        self.states_counter: Dict[str, int] = {}
         self.pieces: Dict[str, ChessPiece] = pieces
         self.turn_color = 'w'
         self.bottom_color = bottom_color
-        self.past_boards = [[row.copy() for row in board_matrix]]
-        self.no_progression_counter = self.repetitions_counter = 0
-        self.turn_counter = 1
-        self.move_counter = 0
+        self.no_progression_counter = 0
         self.kill_flag = False
         self.status = Status.NORMAL
 
@@ -27,22 +25,18 @@ class Referee():
         return [row.copy() for row in self.board_matrix]
 
     def turn(self) -> None:
-        self.turn_counter += 1 # increase turn counter
         self.turn_color = 'b' if self.turn_color == 'w' else 'w' # change turns
         for i in range(1, 9): # update pawns to avoid second chances in en passants
             pawn = self.pieces[self.turn_color + 'p' + str(i)]
-            if pawn.has_jumped:
+            if pawn.active and pawn.has_jumped:
                 pawn.has_jumped = False
-        if self.turn_counter > (REPETITIONS_FOR_DRAW + 2):
-            self.past_boards.pop(0)
-        self.past_boards.append(self.board_shot())
         self.update_status()
 
     def update_status(self) -> None:
         print('status checking: ', end='')
         # check progression
         if self.no_progression_counter == NO_PROGRESSION_LIMIT:
-            print('DRAW BY LACK OF PROGRESSION')
+            print('LACK OF PROGRESSION')
             self.status = Status.DRAW_PROGRESSION
             return
         # check king
@@ -61,16 +55,10 @@ class Referee():
             self.status = Status.DRAW_STALEMATE
             return
         # check repetition
-        if self.move_counter % 4 == 0:
-            if self.check_repetition():
-                self.repetitions_counter += 1
-                if self.repetitions_counter == REPETITIONS_FOR_DRAW:
-                    print('DRAW BY REPETITION')
-                    self.status = Status.DRAW_REPETITION
-                    return
-            else:
-                self.repetitions_counter = 0
-                self.past_board = self.board_shot()
+        if self.check_repetition():
+            print('REPETITION')
+            self.status = Status.DRAW_REPETITION
+            return 
         # check material
         if self.kill_flag:
             if self.check_material_insufficiency():
@@ -85,11 +73,17 @@ class Referee():
         return
 
     def check_repetition(self) -> bool:
-        for r in range(8):
-            for c in range(8):
-                if self.past_boards[0][r][c] != self.board_matrix[r][c]:
-                    return False
-        return True
+        key = ''
+        for i in range(8):
+            for j in range(8):
+                if self.board_matrix[i][j]:
+                    key += self.board_matrix[i][j][0] + self.board_matrix[i][j][1]
+                else:
+                    key += '0'
+        self.states_counter[key] = self.states_counter.get(key, 0) + 1
+        if self.states_counter[key] == REPETITIONS_FOR_DRAW:
+            return True
+        return False
 
     def check_mobility(self) -> bool:
         for key, value in self.pieces.items():
@@ -102,27 +96,33 @@ class Referee():
 
         w_sum = {}
         b_sum = {}
-        for p in self.pieces.keys():
-            # NOTE - get the dict based on color
-            d = w_sum if p[0] == 'w' else b_sum
-            p_type = p[1]
-            d[p_type] = d.get(p_type,0) + 1
+        for key, value in self.pieces.items():
+            if not value.active:
+                continue
+            if value.type == 'p' or value.type == 'r' or value.type == 'q':
+                return False
+            d = w_sum if key[0] == 'w' else b_sum
+            p_type = key[1]
+            d[p_type] = d.get(p_type, 0) + 1
+
         w_count = set(w_sum.items())
         b_count = set(b_sum.items())
 
-        # NOTE - each set contain tuples like (type, sum)
-        condition = False
-        # NOTE - 1 king vs 1 king
-        condition |= (w_count == {('k', 1)} == b_count)
-        # NOTE - 1 king vs 1 king and 1 bishop
+        # 1 king vs 1 king
+        condition = w_count == b_count == {('k', 1)}
+        # 1 king vs 1 king and 1 bishop
         condition |= \
             (w_count == {('k', 1)} and b_count == {('k', 1),('b', 1)}) or \
             (b_count == {('k', 1)} and w_count == {('k', 1),('b', 1)})
-        # NOTE - 1 king vs 1 king and 1 knight
+        # 1 king vs 1 king and 1 knight
         condition |= \
             (w_count == {('k', 1)} and b_count == {('k', 1),('n', 1)}) or \
             (b_count == {('k', 1)} and w_count == {('k', 1),('n', 1)})
-        # TODO: 1 king and 1 bishop vs 1 king and 1 bishop (bishops of similar squares)
+        # 1 king and 1 bishop vs 1 king and 1 bishop (bishops of similar squares)
+        if w_count == {('k', 1), ('b', 1)} and b_count == {('k', 1), ('b', 1)}:
+            wbcode = 'wb3' if self.pieces['wb3'].active else 'wb6'
+            bbcode = 'bb3' if self.pieces['bb3'].active else 'bb6'
+            condition = wbcode[2] != bbcode[2]
         return condition
     
     def check_bounds(self, pos) -> bool:  # checks whether position exists in the board

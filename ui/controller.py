@@ -1,8 +1,8 @@
 from typing import Dict, List
 from logic.const import TILE_SIZE
-import pygame
 from logic.referee import Referee
 from logic.tools import show_board_matrix
+import pygame
 
 from ui.board import BoardTile, ChessPiece
 
@@ -89,7 +89,6 @@ class Controller:
 
         self.board_matrix[r][c] = self.selected  # update matrix
         self.board_matrix[piece_pos[0]][piece_pos[1]] = None  # update matrix
-        self.referee.move_counter += 1
 
         piece.move((c * TILE_SIZE, r * TILE_SIZE))  # move sprite
 
@@ -123,10 +122,10 @@ class Controller:
             if (r, c) in self.referee.get_possible_moves(self.selected):
                 self.transform(r, c)
                 self.referee.turn()
-                if self.selected[1] != 'p':
-                    self.referee.no_progression_counter += 1
-                else:
+                if self.selected[1] == 'p':
                     self.referee.no_progression_counter = 0
+                else:
+                    self.referee.no_progression_counter += 1
             self.handle_highlight_hint(None, turnoff = True)
             self.selected = None
 
