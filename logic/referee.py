@@ -11,7 +11,7 @@ class Referee():
         self.turn_color = 'w'
         self.bottom_color = bottom_color
         self.no_progression_counter = 0
-        self.kill_flag = False
+        self.pieces_counter = 32
         self.status = Status.NORMAL
         if bottom_color == 'w':
             self.states_counter: Dict[str, int] = {INITIAL_STATE_1 : 1}
@@ -42,13 +42,18 @@ class Referee():
             print('LACK OF PROGRESSION')
             self.status = Status.DRAW_PROGRESSION
             return
+        # check material
+        if self.pieces_counter < 5:
+            if self.check_material_insufficiency():
+                print('MATERIAL INSUFFICIENCY')
+                self.status = Status.DRAW_MATERIAL
+                return
         # check king
         if self.check_threat(self.pieces[self.turn_color + 'k5'].get_board_pos(), self.enemy_color()):
-            for key, value in self.pieces.items():
-                if key[0] == self.turn_color:
-                    if value.active and self.get_possible_moves(key):
-                        print('CHECK - ' + letter_to_color(self.turn_color) + ' king is in check.')
-                        self.status = Status.CHECK
+            if self.check_mobility():
+                print('CHECK - ' + letter_to_color(self.turn_color) + ' king is in check.')
+                self.status = Status.CHECK
+                return
             print('CHECKMATE - ' + letter_to_color(self.enemy_color()).upper() + ' WINS!')
             self.status = Status.CHECKMATE
             return
@@ -62,14 +67,6 @@ class Referee():
             print('REPETITION')
             self.status = Status.DRAW_REPETITION
             return 
-        # check material
-        if self.kill_flag:
-            if self.check_material_insufficiency():
-                print('MATERIAL INSUFFICIENCY')
-                self.status = Status.DRAW_MATERIAL
-            self.kill_flag = False
-            self.no_progression_counter = 0
-            return
         # normal status
         print('NORMAL - its ' + letter_to_color(self.turn_color) + ' turn.')
         self.status = Status.NORMAL

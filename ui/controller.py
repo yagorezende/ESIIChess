@@ -67,7 +67,7 @@ class Controller:
                 self.board_matrix[r][c + 1] = None  # update matrix
                 rook = self.pieces[self.board_matrix[r][c - 1]]
                 rook.move(((c - 1) * TILE_SIZE, r * TILE_SIZE))
-            if displacement == -2:  # the player is trying a big castle
+            elif displacement == -2:  # the player is trying a big castle
                 self.board_matrix[r][c + 1] = self.board_matrix[r][c - 2]  # update matrix
                 self.board_matrix[r][c - 2] = None  # update matrix
                 rook = self.pieces[self.board_matrix[r][c + 1]]
@@ -78,14 +78,15 @@ class Controller:
         elif piece.type == 'r':  # update instance
             piece.has_moved = True
         elif piece.type == 'p':  # update instance
-            if abs(r - piece_pos[0]) == 2:
+            if abs(r - piece_pos[0]) == 2: # double step
                 piece.has_jumped = True
             else:
                 piece.has_jumped = False
                 if c != piece_pos[1] and not self.board_matrix[r][c]:  # en passant
                     self.pieces[self.board_matrix[piece_pos[0]][c]].active = False
                     self.board_matrix[piece_pos[0]][c] = None
-                    self.referee.kill_flag = True
+                    self.referee.no_progression_counter = 0
+                    self.referee.pieces_counter -= 1
 
         self.board_matrix[r][c] = self.selected  # update matrix
         self.board_matrix[piece_pos[0]][piece_pos[1]] = None  # update matrix
@@ -113,19 +114,20 @@ class Controller:
                 if (r, c) in self.referee.get_possible_moves(self.selected):
                     self.pieces[self.board_matrix[r][c]].active = False
                     self.transform(r, c)
+                    self.referee.no_progression_counter = 0
+                    self.referee.pieces_counter -= 1
                     self.referee.turn()
-                    self.referee.kill_flag = True
                 self.handle_highlight_hint(None, turnoff = True, pos=(r, c))
                 self.selected = None
 
         elif self.selected:  # click on empty slot, a piece was previously selected
             if (r, c) in self.referee.get_possible_moves(self.selected):
                 self.transform(r, c)
-                self.referee.turn()
                 if self.selected[1] == 'p':
                     self.referee.no_progression_counter = 0
                 else:
                     self.referee.no_progression_counter += 1
+                self.referee.turn()
             self.handle_highlight_hint(None, turnoff = True)
             self.selected = None
 
