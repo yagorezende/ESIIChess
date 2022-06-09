@@ -1,7 +1,8 @@
 import pygame
 from pygame.locals import *
 
-from ui.controller import Controller
+from ui.screens.game_menu import GameMenu
+from ui.screens.navigator import Navigator
 
 
 class App:
@@ -11,7 +12,7 @@ class App:
         self._display_surf = None
         self._FPS_LIMIT = 60
         self.size = self.width, self.height = 640, 640
-        self.controller = Controller()
+        self.navigator = Navigator()
 
     def on_init(self):
         pygame.init()
@@ -22,16 +23,14 @@ class App:
         self.fps_clock = pygame.time.Clock()
 
         # init gameobjects
-        self.controller.init_board()
+        self.navigator.show(GameMenu())
 
         return True
 
     def on_event(self, event):
         if event.type == pygame.QUIT:
             self._running = False
-        if event.type == pygame.MOUSEBUTTONUP:
-            self.controller.on_click()
-        
+
     def on_loop(self):
         """
         Use this method to process the next step of the game
@@ -44,8 +43,6 @@ class App:
         Use this method to render all objects in the game
         :return: None
         """
-        # display the board first
-        self.controller.on_render(self._display_surf)
         pygame.display.flip()
 
     def on_cleanup(self):
@@ -63,7 +60,10 @@ class App:
         while self._running:
             for event in pygame.event.get():
                 self.on_event(event)
+                self.navigator.on_event(event)
             self.on_loop()
+            self.navigator.on_loop()
+            self.navigator.on_render(self._display_surf)
             self.on_render()
             self.fps_clock.tick(self._FPS_LIMIT)
         self.on_cleanup()

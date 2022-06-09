@@ -56,3 +56,9 @@ class ChessPiece:
 
     def render(self):
         return self.sprite, (self.x + self.offset, self.y + self.offset)
+
+    def reload_sprite(self):
+        self.sprite = self._load_sprite()
+
+    def _load_sprite(self):
+        return pygame.image.load(f"assets/images/{self.color}{self.type}.png").convert_alpha()

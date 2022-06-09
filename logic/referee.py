@@ -18,20 +18,20 @@ class Referee():
         else:
             self.states_counter: Dict[str, int] = {INITIAL_STATE_2 : 1}
 
-    def enemy_color(self) -> str:
-        return 'b' if self.turn_color == 'w' else 'w'
+    def board_shot(self):
+        return [row.copy() for row in self.board_matrix]
 
     def bottomup_orientation(self) -> bool:
         return self.turn_color == self.bottom_color
 
-    def board_shot(self):
-        return [row.copy() for row in self.board_matrix]
+    def enemy_color(self) -> str:
+        return 'b' if self.turn_color == 'w' else 'w'
 
     def turn(self) -> None:
         self.turn_color = 'b' if self.turn_color == 'w' else 'w' # change turns
         for i in range(1, 9): # update pawns to avoid second chances in en passants
-            pawn = self.pieces[self.turn_color + 'p' + str(i)]
-            if pawn.active and pawn.has_jumped:
+            pawn = self.pieces.get(self.turn_color + 'p' + str(i))
+            if pawn and pawn.active and pawn.has_jumped:
                 pawn.has_jumped = False
         self.update_status()
 
@@ -120,11 +120,18 @@ class Referee():
             (b_count == {('k', 1)} and w_count == {('k', 1),('n', 1)})
         # 1 king and 1 bishop vs 1 king and 1 bishop (bishops of similar squares)
         if w_count == {('k', 1), ('b', 1)} and b_count == {('k', 1), ('b', 1)}:
-            wbcode = 'wb3' if self.pieces['wb3'].active else 'wb6'
-            bbcode = 'bb3' if self.pieces['bb3'].active else 'bb6'
-            condition = wbcode[2] != bbcode[2]
+            wbpos = bbpos = None
+            for key, value in self.pieces.items():
+                if value.active and value.type == 'b':
+                    if key[0] == 'w':
+                        wbpos = value.get_board_pos()
+                    else:
+                        bbpos = value.get_board_pos()
+                if wbpos and bbpos:
+                    break
+            condition = self.get_square_color(wbpos) == self.get_square_color(bbpos)
         return condition
-    
+
     def check_bounds(self, pos) -> bool:  # checks whether position exists in the board
         return 0 <= pos[0] <= 7 and 0 <= pos[1] <= 7
 
@@ -285,7 +292,7 @@ class Referee():
 
     def get_king_moves(self, pos: tuple) -> list:
         space = self.get_delta_moves(pos, 'king')
-        enemy_color = 'b' if self.board_matrix[pos[0]][pos[1]][0] == 'w' else 'w'
+        enemy_color = self.enemy_color()
         if self.check_threat(pos, enemy_color):  # king is currently threatened, he can't castle
             return space
 
@@ -298,7 +305,7 @@ class Referee():
                 steps += 1
             if steps == 2 and not self.check_void(new_pos):
                 piece = self.pieces[self.board_matrix[new_pos[0]][new_pos[1]]]
-                if piece.color != enemy_color and piece.type == 'r' and not piece.has_moved:
+                if piece.color == self.turn_color and piece.type == 'r' and not piece.has_moved:
                     space.append((new_pos[0], new_pos[1] - 1))
             # big castle
             new_pos, steps = (pos[0], pos[1] - 1), 0
@@ -307,10 +314,15 @@ class Referee():
                 steps += 1
             if steps == 3 and not self.check_void(new_pos):
                 piece = self.pieces[self.board_matrix[new_pos[0]][new_pos[1]]]
-                if piece.color != enemy_color and piece.type == 'r' and not piece.has_moved:
+                if piece.color == self.turn_color and piece.type == 'r' and not piece.has_moved:
                     space.append((new_pos[0], new_pos[1] + 2))
 
         return space
+
+    def get_square_color(self, pos: tuple) -> str: # returns the color of a square in a certain position.
+        if pos[0] % 2 and pos[1] % 2 or not pos[0] % 2 and not pos[1] % 2:
+            return 'w'
+        return 'b'
 
     def get_possible_moves(self, piece: str) -> list:
         """
@@ -337,3 +349,18 @@ class Referee():
         if piece_type == 'k':  # it's the king
             return self.prune(pos, self.get_king_moves(pos))
         return None
+
+    def get_pawn_promote(self):
+        """
+        Return the pawn key (in pieces) that represent the pawn ready to be
+        promoted.
+        """
+        for k, cp in self.pieces.items():
+            # NOTE - if piece is pawn
+            if cp.type == 'p' and (
+                    # NOTE - white pawn on top row
+                    cp.color == 'w' and cp.get_board_pos()[0] == 0 or
+                    # NOTE - black pawn on bottom row
+                    cp.color == 'b' and cp.get_board_pos()[0] == 7):
+                return k
+        return ''
