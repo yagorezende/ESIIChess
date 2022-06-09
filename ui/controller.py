@@ -1,5 +1,5 @@
 from typing import Dict, List
-from logic.const import TILE_SIZE
+from logic.const import TILE_SIZE, Status
 from logic.referee import Referee
 from logic.tools import show_board_matrix
 import pygame
@@ -8,6 +8,7 @@ from ui.board import BoardTile, ChessPiece
 from ui.screens.navigator import Navigator
 from ui.screens.piece_selection import PieceSelection
 from logic.rcp_command import RetrieveChosenPiece
+
 
 class Controller:
 
@@ -83,7 +84,7 @@ class Controller:
         elif piece.type == 'r':  # update instance
             piece.has_moved = True
         elif piece.type == 'p':  # update instance
-            if abs(r - piece_pos[0]) == 2: # double step
+            if abs(r - piece_pos[0]) == 2:  # double step
                 piece.has_jumped = True
             else:
                 piece.has_jumped = False
@@ -122,7 +123,7 @@ class Controller:
                     self.referee.no_progression_counter = 0
                     self.referee.pieces_counter -= 1
                     self.referee.turn()
-                self.handle_highlight_hint(None, turnoff = True, pos=(r, c))
+                self.handle_highlight_hint(None, turnoff=True, pos=(r, c))
                 self.selected = None
 
         elif self.selected:  # click on empty slot, a piece was previously selected
@@ -133,9 +134,14 @@ class Controller:
                 else:
                     self.referee.no_progression_counter += 1
                 self.referee.turn()
-            self.handle_highlight_hint(None, turnoff = True)
+            self.handle_highlight_hint(None, turnoff=True)
             self.selected = None
 
+        # check if king is in check
+        if self.referee.status == Status.CHECK or self.referee.status == Status.CHECKMATE:
+            # tint the grid
+            x, y = self.pieces[f"{self.referee.turn_color}k5"].get_board_pos()
+            self.grid[y * 8 + x].turn_red()
         self._pp_look_promotion = True
 
     def on_loop(self) -> None:
@@ -150,7 +156,7 @@ class Controller:
             if piece.active:
                 surface.blit(*piece.render())
 
-    def handle_highlight_hint(self, target: str, turnoff = False, pos: tuple = None):
+    def handle_highlight_hint(self, target: str, turnoff=False, pos: tuple = None):
         if target == self.selected:
             return
 
@@ -197,7 +203,7 @@ class Controller:
             x=piece.x, y=piece.y,
             offset=piece.offset)
         # NOTE - +8 to solve colisions ex. wp1 -> wr1 replacing the existing wr1
-        new_key = f"{pawn_k[0]}{new_type}{int(pawn_k[2:])+8}"
+        new_key = f"{pawn_k[0]}{new_type}{int(pawn_k[2:]) + 8}"
         r, c = piece.get_board_pos()
         self.pieces[new_key] = new_piece
         self.board_matrix[r][c] = new_key
