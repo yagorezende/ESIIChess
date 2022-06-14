@@ -41,12 +41,7 @@ class ChessPiece:
         self.active = True
         self.offset = offset
         self._event_keeper = None
-
-        if type == 'p':
-            self.has_jumped = False
-
-        elif type == 'k' or type == 'r':
-            self.has_moved = False
+        self.has_moved = False
 
     def move(self, pos:tuple):
         self.x, self.y = pos

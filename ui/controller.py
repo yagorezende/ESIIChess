@@ -1,6 +1,7 @@
 from typing import Dict, List
 from logic.const import TILE_SIZE, Status
 from logic.referee import Referee
+from logic.bot import Bot
 from logic.tools import show_board_matrix
 import pygame
 
@@ -8,7 +9,6 @@ from ui.board import BoardTile, ChessPiece
 from ui.screens.navigator import Navigator
 from ui.screens.piece_selection import PieceSelection
 from logic.rcp_command import RetrieveChosenPiece
-
 
 class Controller:
 
@@ -26,6 +26,14 @@ class Controller:
             ['wr1', 'wn2', 'wb3', 'wq4', 'wk5', 'wb6', 'wn7', 'wr8']
         ]
         self.referee = Referee(self.board_matrix, self.pieces)
+        self.bot = Bot(
+            level=2,
+            referee=self.referee,
+            board_matrix=self.board_matrix,
+            pieces=self.pieces,
+            color='b',
+            bottomup_orientation=False)
+        self.multiplayer = False
         self.selected = None
         self.offset = 0
         self.highlight = []
@@ -64,6 +72,7 @@ class Controller:
 
         piece = self.pieces[self.selected]
         piece_pos = piece.get_board_pos()
+        piece.has_moved = True  # update instance
 
         if piece.type == 'k':
             rook = None
@@ -78,16 +87,10 @@ class Controller:
                 self.board_matrix[r][c - 2] = None  # update matrix
                 rook = self.pieces[self.board_matrix[r][c + 1]]
                 rook.move(((c + 1) * TILE_SIZE, r * TILE_SIZE))
-            if rook:
-                rook.has_moved = True
-            piece.has_moved = True  # update instance
-        elif piece.type == 'r':  # update instance
-            piece.has_moved = True
         elif piece.type == 'p':  # update instance
-            if abs(r - piece_pos[0]) == 2:  # double step
-                piece.has_jumped = True
+            if abs(r - piece_pos[0]) == 2: # double step
+                self.referee.rushed_pawn = (r, c)
             else:
-                piece.has_jumped = False
                 if c != piece_pos[1] and not self.board_matrix[r][c]:  # en passant
                     self.pieces[self.board_matrix[piece_pos[0]][c]].active = False
                     self.board_matrix[piece_pos[0]][c] = None
@@ -98,13 +101,12 @@ class Controller:
         self.board_matrix[piece_pos[0]][piece_pos[1]] = None  # update matrix
 
         piece.move((c * TILE_SIZE, r * TILE_SIZE))  # move sprite
-
-        print('\nBoard Matrix:\n')
-        show_board_matrix(self.board_matrix)
-        print()
+        return
 
     def on_click(self):
         print('-' * 50)
+        if not self.multiplayer and self.referee.turn_color == self.bot.color:
+            return
         c, r = pygame.mouse.get_pos()
         r //= TILE_SIZE
         c //= TILE_SIZE
@@ -117,60 +119,93 @@ class Controller:
                 self.grid[c * 8 + r].turn_light(True)
                 self.selected = target
             elif self.selected:  # the player wants to kill an enemy piece
-                if (r, c) in self.referee.get_possible_moves(self.selected):
-                    self.pieces[self.board_matrix[r][c]].active = False
-                    self.transform(r, c)
-                    self.referee.no_progression_counter = 0
-                    self.referee.pieces_counter -= 1
-                    self.referee.turn()
+                move = (r, c)
+                if move in self.referee.get_possible_moves(self.selected):
+                    self.manage_kill(move)
                 self.handle_highlight_hint(None, turnoff=True, pos=(r, c))
                 self.selected = None
-
         elif self.selected:  # click on empty slot, a piece was previously selected
-            if (r, c) in self.referee.get_possible_moves(self.selected):
-                self.transform(r, c)
-                if self.selected[1] == 'p':
-                    self.referee.no_progression_counter = 0
-                else:
-                    self.referee.no_progression_counter += 1
-                self.referee.turn()
+            move = (r, c)
+            if move in self.referee.get_possible_moves(self.selected):
+                self.manage_move(move)
             self.handle_highlight_hint(None, turnoff=True)
             self.selected = None
+        
+        self._pp_look_promotion = True
 
-        # check if king is in check
+    def manage_move(self, move) -> None:
+        self.transform(move[0], move[1])
+        if self.selected[1] == 'p':
+            self.referee.no_progression_counter = 0
+        else:
+            self.referee.no_progression_counter += 1
+        self._pp_look_promotion = True
+        self.manage_pawns_promotion()
+        # self.selected = None
+        self.referee.turn()
+        # self.show_info()
+        return
+
+    def manage_kill(self, move) -> None:
+        self.pieces[self.board_matrix[move[0]][move[1]]].active = False
+        self.transform(move[0], move[1])
+        self.referee.no_progression_counter = 0
+        self.referee.pieces_counter -= 1
+        self._pp_look_promotion = True
+        self.manage_pawns_promotion()
+        # self.selected = None
+        self.referee.turn()
+        # self.show_info()
+        return
+
+    def show_info(self) -> None:
+        print('\nBoard Matrix:\n')
+        show_board_matrix(self.board_matrix)
+        print()
+
+    def on_loop(self) -> None:
+        if self.referee.check_termination(): # if match has just finished...
+            x, y = self.pieces[f"{self.referee.turn_color}k5"].get_board_pos()
+            self.grid[y * 8 + x].turn_red()
+            return
+        if not self.multiplayer and self.referee.turn_color == self.bot.color: # its AIs turn
+            action = self.bot.get_action()
+            self.selected = self.board_matrix[action[0][0]][action[0][1]]
+            if self.board_matrix[action[1][0]][action[1][1]]:
+                self.manage_kill(action[1])
+            else:
+                self.manage_move(action[1])
+            self.selected = None
+            self._pp_look_promotion = True
         if self.referee.status == Status.CHECK or self.referee.status == Status.CHECKMATE:
             # tint the grid
             x, y = self.pieces[f"{self.referee.turn_color}k5"].get_board_pos()
             self.grid[y * 8 + x].turn_red()
-        self._pp_look_promotion = True
-
-    def on_loop(self) -> None:
         self.manage_pawns_promotion()
         return None
 
-    def on_render(self, surface):
+    def on_render(self, surface) -> None:
         for tile in self.grid:
             surface.blit(*tile.render())
-
         for piece in self.pieces.values():
             if piece.active:
                 surface.blit(*piece.render())
+        return
 
-    def handle_highlight_hint(self, target: str, turnoff=False, pos: tuple = None):
+    def handle_highlight_hint(self, target: str, turnoff: bool = False, pos: tuple = None) -> None:
         if target == self.selected:
             return
-
         # turn off old path
         if self.selected or turnoff:
             for tile in self.grid:
                 tile.turn_light()
-
         if not turnoff:
             # turn on path
             for pos in self.referee.get_possible_moves(target):
                 x, y = pos
                 # print(f"hightlight {y * 8 + x} for pos = {pos}")
                 self.grid[y * 8 + x].turn_light(True)
+        return
 
     def manage_pawns_promotion(self) -> None:
         """
@@ -188,31 +223,34 @@ class Controller:
             pawn_k = self.referee.get_pawn_promote()
             if (pawn_k):
                 # NOTE - promote to a new type
-                self.open_piece_selection_screen(pawn_k)
+                if not self.multiplayer and self.referee.turn_color == self.bot.color:
+                    pass # TODO: implement autopromotion for AI.
+                else:
+                    self.open_piece_selection_screen(pawn_k)
         elif self._pp_counter_until_piece_selection > 0:
             self._pp_counter_until_piece_selection -= 1
+        return
 
-    def promote_pawn(self, pawn_k: str, new_type: str):
+    def promote_pawn(self, pawn_k: str, new_type: str) -> None:
         """
         Promote the pawn specified by pawn_k to the specified type.
         """
         piece = self.pieces.pop(pawn_k)
-        new_piece = ChessPiece(
-            type=new_type,
-            color=piece.color,
-            x=piece.x, y=piece.y,
-            offset=piece.offset)
+        piece.type = new_type
+        piece.reload_sprite()
         # NOTE - +8 to solve colisions ex. wp1 -> wr1 replacing the existing wr1
-        new_key = f"{pawn_k[0]}{new_type}{int(pawn_k[2:]) + 8}"
+        new_key = f"{pawn_k[0]}{new_type}{int(pawn_k[2:])+8}"
         r, c = piece.get_board_pos()
-        self.pieces[new_key] = new_piece
+        self.pieces[new_key] = piece
         self.board_matrix[r][c] = new_key
+        return
 
-    def open_piece_selection_screen(self, pawn_k: str):
+    def open_piece_selection_screen(self, pawn_k: str) -> None:
         scr = PieceSelection()
         scr.show_color = pawn_k[0]
         scr.command_on_leave = RetrieveChosenPiece(pawn_k, scr, self)
         Navigator().show(scr)
+        return
 
     def check_status(self) -> None:
         """
