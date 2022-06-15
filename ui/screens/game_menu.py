@@ -32,6 +32,10 @@ class GameMenu(GenericScreen):
             "[ CLICK TO START ]",
             fgcolor=(255, 255, 255),
             size=scr_surf.get_height()/32)
+        fullscreen_surf, fullscreen_rect = self.defaut_font.render(
+            "F11 to enter/exit fullscreen",
+            fgcolor=(255, 255, 255),
+            size=scr_surf.get_height()/40)
         # ----------
         scr_surf.fill((0, 0, 0))
         scr_surf.blit(
@@ -44,6 +48,11 @@ class GameMenu(GenericScreen):
                 (scr_surf.get_width() - press_any_rect.width)*0.5,
                 (scr_surf.get_height()-press_any_rect.height)*0.9,
                 press_any_rect.width, press_any_rect.height))
+        scr_surf.blit(
+            fullscreen_surf, (
+                (scr_surf.get_width() - fullscreen_rect.width)*0.5,
+                (scr_surf.get_height()-fullscreen_rect.height)*0.95,
+                fullscreen_rect.width, fullscreen_rect.height))
         return None
 
     def on_leave(self) -> None:
