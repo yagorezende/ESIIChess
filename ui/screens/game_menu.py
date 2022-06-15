@@ -29,7 +29,7 @@ class GameMenu(GenericScreen):
             fgcolor=(255, 255, 255),
             size=scr_surf.get_height()/8)
         press_any_surf, press_any_rect = self.defaut_font.render(
-            "click to start",
+            "[ CLICK TO START ]",
             fgcolor=(255, 255, 255),
             size=scr_surf.get_height()/32)
         # ----------
