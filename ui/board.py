@@ -40,8 +40,8 @@ class ChessPiece:
         self.y = y
         self.active = True
         self.offset = offset
-        self._event_keeper = None
         self.has_moved = False
+        self._event_keeper = None
 
     def move(self, pos:tuple):
         self.x, self.y = pos

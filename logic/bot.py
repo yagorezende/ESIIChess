@@ -15,15 +15,13 @@ class Node():
         self.left_rook = referee_info['l_rook']
         self.right_rook = referee_info['r_rook']
         self.rushed_pawn = referee_info['rushed_pawn']
-        # self.status = referee_info['status']
         self.turn_color = referee_info['turn_color']
-        # self.turn_counter = referee_info['turn_counter']
         self.g = g
         self.f = f
         self.origin = origin
         return
 
-    def transform(self, origin, move):
+    def transform(self, origin: tuple, move: tuple):
         r, c = origin
         i, j = move
         code = self.board_matrix[r][c]
@@ -63,9 +61,7 @@ class Node():
             'l_rook' : self.left_rook,
             'r_rook' : self.right_rook,
             'rushed_pawn' : self.rushed_pawn,
-            # 'status' : self.status,
-            'turn_color' : self.turn_color,
-            # 'turn_counter' : self.turn_counter,
+            'turn_color' : self.turn_color
         }
 
     def copy(self):
@@ -94,10 +90,15 @@ class Bot():
             return self.material_advantage_search() # for tests only
         return self.search() # may have some action here
 
-    def evaluate_state(self, state: Node) -> float:    
+    def evaluate_state(self, state: Node) -> float:
+        """
+        Function to assess a particular state.
+        It returns a number that is smaller the more the state
+        is favorable to the color of the turn. Return 0 means checkmate.
+        """
         bonus = 0
-        backup = self.referee.get_info()
-        self.referee.set(state.get_info())
+        backup = self.get_referee_info()
+        self.set_referee_info(state.get_info())
         bottomup_orientation = state.turn_color == state.bottom_color
         for r in range(8):
             for c in range(8):
@@ -120,7 +121,7 @@ class Bot():
                                 bonus += 0.1 * (r - 4)
                         elif not bottomup_orientation and r < 4:
                             bonus -= 0.1 * (4 - r)
-        self.referee.set(backup)
+        self.set_referee_info(backup)
         self.referee.board_matrix = self.board_matrix
         return 1000 - count_material_advantage(state.board_matrix, state.turn_color) * (1 + bonus)
 
@@ -158,43 +159,27 @@ class Bot():
         for key, value in self.pieces.items():
             if key[0] == self.color and value.active:
                 space = self.referee.get_possible_moves(key)
-                if space:
-                    alive.append((value, space))
+                if space: alive.append((value, space))
+        if not alive: return None
         r_selection = choice(alive)
         move = choice(r_selection[1])
         pos = r_selection[0].get_board_pos()
         return pos, move
 
     def search(self) -> Tuple[tuple, tuple]:
-        # initial = Node(self.referee.get_info(), g=0)
+        # initial = Node(self.get_referee_info(), g=0)
         # initial.f = self.evaluate_state(initial)
-        # ind = 1
-        # for neighbor in self.generate_successors(initial):
-        #     print(ind)
-        #     show_board_matrix(neighbor.board_matrix)
-        #     ind+=1
-        #     print()
-        # result = self.RBFS(initial, f_limit=2**31-1, depth=0)
-        # for state in result[0]:
-        #     print(
-        #             f'''
-        #             New State
-        #             turn: {state.turn_color}
-        #             g = {state.g}
-        #             f = {state.f}
-        #             origin: {state.origin}
-        #             '''
-        #         )
+        # result = self.RBFS(initial, 10**9, 0)
         # state = result[0][1]
         # return state.origin
-        return self.random_action()
+        return self.random_action() # NOTE: provisional
 
     def generate_successors(self, node: Node) -> List[Node]:
         """
         Generates all possible neighbors of a node.
         """
-        backup = self.referee.get_info()
-        self.referee.set(node.get_info())
+        backup = self.get_referee_info()
+        self.set_referee_info(node.get_info())
         successors = []
         for r in range(8):
             for c in range(8):
@@ -208,7 +193,7 @@ class Bot():
                         neighbor.f = neighbor.g + self.evaluate_state(neighbor)
                         neighbor.origin = ((r, c), move)
                         successors.append(neighbor)
-        self.referee.set(backup)
+        self.set_referee_info(backup)
         self.referee.board_matrix = self.board_matrix
         return successors
 
@@ -233,7 +218,7 @@ class Bot():
         return best, alternative
 
     def RBFS(self, node: Node, f_limit: int, depth: int) -> Tuple[List[Node], float]: # Recursive Best-First Search
-        if depth >= self.level:
+        if depth >= self.level * 1.5:
             return [node], node.f
         successors = self.generate_successors(node)
         if not successors:
@@ -257,10 +242,45 @@ class Bot():
                 selected[0].f = aux[1] # failure, update the heuristic and try again.
         return ([], 0)
 
+    def get_referee_info(self) -> dict:
+        """
+        Returns some information about the referee object.
+        """
+        return {
+            'board' : self.referee.board_shot(),
+            'bottom_color' : self.referee.bottom_color,
+            'pieces_counter' : self.referee.pieces_counter,
+            'king' : self.referee.pieces[self.referee.turn_color + 'k5'].has_moved,
+            'l_rook' : self.pieces[self.referee.turn_color + 'r1'].has_moved,
+            'r_rook' : self.pieces[self.referee.turn_color + 'r8'].has_moved,
+            'rushed_pawn' : self.referee.rushed_pawn,
+            'turn_color' : self.referee.turn_color
+        }
+    
+    def set_referee_info(self, info: dict) -> None:
+        """
+        Set some information about the referee object.
+        """
+        self.referee.board_matrix = info['board']
+        self.referee.bottom_color = info['bottom_color']
+        self.referee.pieces_counter = info['pieces_counter']
+        self.referee.pieces[self.referee.turn_color + 'k5'].has_moved = info['king']
+        self.referee.pieces[self.referee.turn_color + 'r1'].has_moved = info['l_rook']
+        self.referee.pieces[self.referee.turn_color + 'r8'].has_moved = info['r_rook']
+        self.referee.rushed_pawn = info['rushed_pawn']
+        self.referee.turn_color = info['turn_color']
+        return
 
-
-
-
-
-
+    def get_state(self) -> dict:
+        return {
+            'level' : self.level,
+            'color' : self.color,
+            'bottomup_orientation' : self.bottomup_orientation
+            }
+    
+    def set_state(self, state: dict) -> None:
+        self.level = state['level']
+        self.color = state['color']
+        self.bottomup_orientation = state['bottomup_orientation']
+        return None
 

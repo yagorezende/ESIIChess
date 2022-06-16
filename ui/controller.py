@@ -1,9 +1,10 @@
+import json
+import os
 from typing import Dict, List
-from logic.const import TILE_SIZE, Status
+from logic.const import BOARD_MATRIX_1, SAVE_FILE, TILE_SIZE, Status
 from logic.referee import Referee
 from logic.bot import Bot
-from logic.tools import show_board_matrix
-import pygame
+from logic.tools import count_material_advantage, letter_to_color, show_board_matrix, show_dic
 
 from ui.board import BoardTile, ChessPiece
 from ui.screens.navigator import Navigator
@@ -15,16 +16,7 @@ class Controller:
     def __init__(self):
         self.grid: List[BoardTile] = []
         self.pieces: Dict[str, ChessPiece] = {}
-        self.board_matrix: List[List[str]] = [
-            ['br1', 'bn2', 'bb3', 'bq4', 'bk5', 'bb6', 'bn7', 'br8'],
-            ['bp1', 'bp2', 'bp3', 'bp4', 'bp5', 'bp6', 'bp7', 'bp8'],
-            [None] * 8,
-            [None] * 8,
-            [None] * 8,
-            [None] * 8,
-            ['wp1', 'wp2', 'wp3', 'wp4', 'wp5', 'wp6', 'wp7', 'wp8'],
-            ['wr1', 'wn2', 'wb3', 'wq4', 'wk5', 'wb6', 'wn7', 'wr8']
-        ]
+        self.board_matrix = [row.copy() for row in BOARD_MATRIX_1]
         self.referee = Referee(self.board_matrix, self.pieces)
         self.bot = Bot(
             level=2,
@@ -50,23 +42,8 @@ class Controller:
                 white = not white
             white = not white
         # add pieces
-        order = ["r", "n", "b", "q", "k", "b", "n", "r"]
-        for i in range(8):
-            # white
-            self.pieces['wp' + str(i + 1)] = ChessPiece(x=i * TILE_SIZE, y=6 * TILE_SIZE, offset=self.offset)
-            try:
-                self.pieces['w' + order[i] + str(i + 1)] = ChessPiece(type=order[i], x=i * TILE_SIZE, y=7 * TILE_SIZE,
-                                                                      offset=self.offset)
-            except Exception as e:
-                print(f"Could not import w{order[i]}.png")
-
-            # black
-            self.pieces['bp' + str(i + 1)] = ChessPiece(color='b', x=i * TILE_SIZE, y=1 * TILE_SIZE, offset=self.offset)
-            try:
-                self.pieces['b' + order[i] + str(i + 1)] = ChessPiece(color='b', type=order[i], x=i * TILE_SIZE,
-                                                                      y=0 * TILE_SIZE, offset=self.offset)
-            except Exception as e:
-                print(f"Could not import b{order[i]}.png")
+        self.load_pieces()
+        return None
 
     def transform(self, r, c):
 
@@ -103,16 +80,15 @@ class Controller:
         piece.move((c * TILE_SIZE, r * TILE_SIZE))  # move sprite
         return
 
-    def on_click(self):
-        print('-' * 50)
+    def on_click(self, pos):
         if not self.multiplayer and self.referee.turn_color == self.bot.color:
             return
-        c, r = pygame.mouse.get_pos()
-        r //= TILE_SIZE
-        c //= TILE_SIZE
-        target = self.board_matrix[r][c]
+        r = pos[1] // TILE_SIZE
+        c = pos[0] // TILE_SIZE
+        print('-' * 50)
         print(f"Click on {(r, c)}")
 
+        target = self.board_matrix[r][c]
         if target:  # click on piece
             if target[0] == self.referee.turn_color:  # if it's a player's piece
                 self.handle_highlight_hint(target)
@@ -122,66 +98,82 @@ class Controller:
                 move = (r, c)
                 if move in self.referee.get_possible_moves(self.selected):
                     self.manage_kill(move)
-                self.handle_highlight_hint(None, turnoff=True, pos=(r, c))
-                self.selected = None
+                    self.handle_highlight_hint(None, turnoff=True, pos=(r, c))
+                    self.turn()
         elif self.selected:  # click on empty slot, a piece was previously selected
             move = (r, c)
             if move in self.referee.get_possible_moves(self.selected):
                 self.manage_move(move)
-            self.handle_highlight_hint(None, turnoff=True)
-            self.selected = None
-        
-        self._pp_look_promotion = True
+                self.handle_highlight_hint(None, turnoff=True)
+                self.turn()
+        self.handle_red_light()
+        self.manage_pawn_promotion()
+        return None
+
+    def turn(self):
+        self.selected = None
+        self.referee.turn()
+        return None
+
+    def on_pressing(self, key):
+        print('-' * 50)
+        print('Key pressed:', key)
+        if key == 'r':
+            self.restart()
+        elif key == 's':
+            self.save_game()
+        elif key == 'l':
+            self.load_game()
+        elif key == 'i':
+            self.show_info()
+        return None
 
     def manage_move(self, move) -> None:
         self.transform(move[0], move[1])
+        self._pp_look_promotion = True
         if self.selected[1] == 'p':
             self.referee.no_progression_counter = 0
         else:
             self.referee.no_progression_counter += 1
-        self._pp_look_promotion = True
-        self.manage_pawns_promotion()
-        # self.selected = None
-        self.referee.turn()
-        # self.show_info()
-        return
+        return None
 
     def manage_kill(self, move) -> None:
         self.pieces[self.board_matrix[move[0]][move[1]]].active = False
         self.transform(move[0], move[1])
+        self._pp_look_promotion = True
         self.referee.no_progression_counter = 0
         self.referee.pieces_counter -= 1
-        self._pp_look_promotion = True
-        self.manage_pawns_promotion()
-        # self.selected = None
-        self.referee.turn()
-        # self.show_info()
-        return
+        return None
 
     def show_info(self) -> None:
         print('\nBoard Matrix:\n')
         show_board_matrix(self.board_matrix)
+        print(f'''
+            Turn color: {self.referee.turn_color}
+            Material Score: {count_material_advantage(self.board_matrix, self.referee.turn_color)}
+            Turn counter: {self.referee.turn_counter}
+            Status: {self.referee.status.name}
+        ''')
         print()
 
-    def on_loop(self) -> None:
-        if self.referee.check_termination(): # if match has just finished...
+    def handle_red_light(self):
+        if self.referee.status == Status.CHECK or self.referee.status == Status.CHECKMATE:
             x, y = self.pieces[f"{self.referee.turn_color}k5"].get_board_pos()
             self.grid[y * 8 + x].turn_red()
-            return
-        if not self.multiplayer and self.referee.turn_color == self.bot.color: # its AIs turn
+        return None
+    
+    def on_loop(self) -> None:
+        if self.referee.check_termination():
+            return None
+        if self.is_AI_turn():
             action = self.bot.get_action()
             self.selected = self.board_matrix[action[0][0]][action[0][1]]
             if self.board_matrix[action[1][0]][action[1][1]]:
                 self.manage_kill(action[1])
             else:
                 self.manage_move(action[1])
-            self.selected = None
-            self._pp_look_promotion = True
-        if self.referee.status == Status.CHECK or self.referee.status == Status.CHECKMATE:
-            # tint the grid
-            x, y = self.pieces[f"{self.referee.turn_color}k5"].get_board_pos()
-            self.grid[y * 8 + x].turn_red()
-        self.manage_pawns_promotion()
+            self.handle_highlight_hint(None, turnoff=True)
+            self.turn()
         return None
 
     def on_render(self, surface) -> None:
@@ -207,11 +199,11 @@ class Controller:
                 self.grid[y * 8 + x].turn_light(True)
         return
 
-    def manage_pawns_promotion(self) -> None:
+    def manage_pawn_promotion(self) -> None:
         """
         Test if there is a pawn to be promoted, and if there is promote it.
         """
-        # NOTE - look for promotions only after an click event; saving frames;
+        # NOTE - look for promotions only after a click event, saving frames;
         if not self._pp_look_promotion:
             return
         # NOTE - handle promotion when counter is on 0
@@ -223,14 +215,14 @@ class Controller:
             pawn_k = self.referee.get_pawn_promote()
             if (pawn_k):
                 # NOTE - promote to a new type
-                if not self.multiplayer and self.referee.turn_color == self.bot.color:
+                if self.is_AI_turn():
                     pass # TODO: implement autopromotion for AI.
                 else:
                     self.open_piece_selection_screen(pawn_k)
         elif self._pp_counter_until_piece_selection > 0:
             self._pp_counter_until_piece_selection -= 1
         return
-
+    
     def promote_pawn(self, pawn_k: str, new_type: str) -> None:
         """
         Promote the pawn specified by pawn_k to the specified type.
@@ -251,9 +243,106 @@ class Controller:
         scr.command_on_leave = RetrieveChosenPiece(pawn_k, scr, self)
         Navigator().show(scr)
         return
+    
+    def is_AI_turn(self):
+        return not self.multiplayer and self.referee.turn_color == self.bot.color
 
     def check_status(self) -> None:
         """
         Call the referee to check the game status.
         """
         return self.referee.update_status()
+
+    def get_state(self) -> dict:
+        """
+        Returns the state of the controller object.
+        """
+        aux = {}
+        for key, value in self.pieces.items():
+            aux[key] = {
+                'position' : value.get_board_pos(),
+                'has_moved' : value.has_moved,
+                'active' : value.active
+            }
+        return {
+            'board_matrix' : self.board_matrix,
+            'pieces' : aux,
+            'multiplayer' : self.multiplayer,
+            'referee' : self.referee.get_state(),
+            'bot' : self.bot.get_state()
+            }
+
+    def set_state(self, state) -> None:
+        """
+        Loads state.
+        """
+        aux:Dict[ChessPiece] = state['pieces']
+        removable = list(self.pieces.keys())
+        for key in removable:
+            if not key in aux.keys():
+                self.pieces.pop(key)
+        for key, value in aux.items():
+            if not key in self.pieces.keys():
+                self.pieces[key] = ChessPiece(
+                    type=key[1],
+                    color=key[0]
+                )
+            self.pieces[key].y = value['position'][0] * TILE_SIZE
+            self.pieces[key].x = value['position'][1] * TILE_SIZE
+            self.pieces[key].has_moved = value['has_moved']
+            self.pieces[key].active = value['active']
+        self.board_matrix = state['board_matrix']
+        self.multiplayer = state['multiplayer']
+        self.referee.board_matrix = self.board_matrix
+        self.referee.set_state(state['referee'])
+        self.bot.set_state(state['bot'])
+        return None
+    
+    def save_game(self) -> None:
+        with open(SAVE_FILE, 'w') as file:
+            json.dump(self.get_state(), file, indent=4)
+        print('Game state saved.')
+        return None
+
+    def load_game(self) -> None:
+        if os.path.exists(SAVE_FILE):
+            with open(SAVE_FILE) as file:
+                self.set_state(json.load(file))
+            print(f'''Game state loaded. {letter_to_color(self.referee.turn_color).capitalize()} plays next.''')
+        else:
+            print('There is no game state to be loaded.')
+        return None
+
+    def restart(self) -> None:
+        self.load_pieces()
+        self.board_matrix = [row.copy() for row in BOARD_MATRIX_1]
+        self.referee = Referee(self.board_matrix, self.pieces)
+        self.bot = Bot(
+            level=2,
+            referee=self.referee,
+            board_matrix=self.board_matrix,
+            pieces=self.pieces,
+            color='b',
+            bottomup_orientation=False)
+        print('#' * 50  + '\nNew Game')
+        return None
+
+    def load_pieces(self):
+        order = ["r", "n", "b", "q", "k", "b", "n", "r"]
+        for i in range(8):
+            # white
+            self.pieces['wp' + str(i + 1)] = ChessPiece(x=i * TILE_SIZE, y=6 * TILE_SIZE, offset=self.offset)
+            try:
+                self.pieces['w' + order[i] + str(i + 1)] = ChessPiece(type=order[i], x=i * TILE_SIZE, y=7 * TILE_SIZE,
+                                                                      offset=self.offset)
+            except Exception as e:
+                print(f"Could not import w{order[i]}.png")
+
+            # black
+            self.pieces['bp' + str(i + 1)] = ChessPiece(color='b', x=i * TILE_SIZE, y=1 * TILE_SIZE, offset=self.offset)
+            try:
+                self.pieces['b' + order[i] + str(i + 1)] = ChessPiece(color='b', type=order[i], x=i * TILE_SIZE,
+                                                                      y=0 * TILE_SIZE, offset=self.offset)
+            except Exception as e:
+                print(f"Could not import b{order[i]}.png")
+        return None

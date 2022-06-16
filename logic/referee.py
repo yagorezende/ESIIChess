@@ -1,6 +1,6 @@
 from typing import Dict, List
 from logic.const import DELTAS, NO_PROGRESSION_LIMIT, REPETITIONS_FOR_DRAW, INITIAL_STATE_1, INITIAL_STATE_2, Status
-from logic.tools import add_tuples, letter_to_color
+from logic.tools import add_tuples, letter_to_color, str_to_status
 from ui.board import ChessPiece
 
 class Referee():
@@ -19,59 +19,58 @@ class Referee():
             self.states_counter: Dict[str, int] = {INITIAL_STATE_1 : 1}
         else:
             self.states_counter: Dict[str, int] = {INITIAL_STATE_2 : 1}
-
+    
     def board_shot(self) -> List[List[str]]:
         """
-        Returns copy of board matrix.
+        Returns a copy of the board matrix.
         """
         return [row.copy() for row in self.board_matrix]
 
-    def get_info(self) -> dict:
+    def get_state(self) -> dict:
         """
-        Returns a map with relevant info about the object.
+        Returns the state of the referee object.
         """
         return {
-            'board' : self.board_shot(),
             'bottom_color' : self.bottom_color,
+            'no_progression_counter' : self.no_progression_counter,
             'pieces_counter' : self.pieces_counter,
-            'king' : self.pieces[self.turn_color + 'k5'].has_moved,
-            'l_rook' : self.pieces[self.turn_color + 'r1'].has_moved,
-            'r_rook' : self.pieces[self.turn_color + 'r8'].has_moved,
             'rushed_pawn' : self.rushed_pawn,
-            # 'status' : self.status,
+            'states_counter' : self.states_counter,
+            'status' : self.status.name,
             'turn_color' : self.turn_color,
-            # 'turn_counter' : self.turn_counter,
-        }
+            'turn_counter' : self.turn_counter
+            }
 
-    def set(self, info: dict) -> None:
+    def set_state(self, state) -> None:
         """
-        Loads relevant info from map.
+        Loads state.
         """
-        self.board_matrix = info['board']
-        self.bottom_color = info['bottom_color']
-        self.pieces_counter = info['pieces_counter']
-        self.pieces[self.turn_color + 'k5'].has_moved = info['king']
-        self.pieces[self.turn_color + 'r1'].has_moved = info['l_rook']
-        self.pieces[self.turn_color + 'r8'].has_moved = info['r_rook']
-        self.rushed_pawn = info['rushed_pawn']
-        # self.status = info['status']
-        self.turn_color = info['turn_color']
-        # self.turn_counter = info['turn_counter']
+        self.bottom_color = state['bottom_color']
+        self.no_progression_counter = state['no_progression_counter']
+        self.pieces_counter = state['pieces_counter']
+        self.rushed_pawn = state['rushed_pawn']
+        self.states_counter = state['states_counter']
+        self.turn_color = state['turn_color']
+        self.turn_counter = state['turn_counter']
+        self.status = str_to_status(state['status'])
         return
 
     def bottomup_orientation(self) -> bool:
-        '''
+        """
         Checks whether current player started at the bottom.
-        '''
+        """
         return self.turn_color == self.bottom_color
 
     def enemy_color(self) -> str:
-        '''
+        """
         Returns enemy pieces' color.
-        '''
+        """
         return 'b' if self.turn_color == 'w' else 'w'
 
-    def turn(self) -> None: # changes turns
+    def turn(self) -> None:
+        """
+        Turn changing.
+        """
         if self.rushed_pawn:
             hp = self.board_matrix[self.rushed_pawn[0]][self.rushed_pawn[1]]
             if hp is None or hp[0] == self.enemy_color():
@@ -131,9 +130,9 @@ class Referee():
         for i in range(8):
             for j in range(8):
                 if self.board_matrix[i][j]:
-                    key.join(self.board_matrix[i][j][:2])
+                    key += self.board_matrix[i][j][:2]
                 else:
-                    key.join('0')
+                    key += '0'
         if not key:
             return False
         self.states_counter[key] = self.states_counter.get(key, 0) + 1
@@ -230,7 +229,7 @@ class Referee():
         for factor in factors:
             new_pos = add_tuples(pos, factor)
             while self.check_void(new_pos):
-                new_pos = (new_pos[0] + factor[0], new_pos[1] + factor[1])
+                new_pos = add_tuples(new_pos, factor)
             if self.check_enemy_presence(new_pos):
                 name = self.board_matrix[new_pos[0]][new_pos[1]]
                 if name[1] == 'r' or name[1] == 'q':
@@ -240,7 +239,7 @@ class Referee():
         for factor in factors:
             new_pos = add_tuples(pos, factor)
             while self.check_void(new_pos):
-                new_pos = (new_pos[0] + factor[0], new_pos[1] + factor[1])
+                new_pos = add_tuples(new_pos, factor)
             if self.check_enemy_presence(new_pos):
                 name = self.board_matrix[new_pos[0]][new_pos[1]]
                 if name[1] == 'b' or name[1] == 'q':
@@ -422,8 +421,7 @@ class Referee():
 
     def get_pawn_promote(self) -> str:
         """
-        Returns the pawn key (in pieces) that represents the pawn ready to be
-        promoted.
+        Returns the pawn key of the pawn ready to be promoted.
         """
         for k, cp in self.pieces.items():
             # NOTE - if piece is pawn

@@ -1,5 +1,11 @@
-from typing import List, Tuple
+from logic.const import Status
 
+# Visual
+
+def show_dic(dic: dict):
+    for key, value in dic.items():
+        print(key, value)
+    return None
 
 def show_board_matrix(matrix):
     for row in matrix:
@@ -15,6 +21,8 @@ def letter_to_color(l):
     if l == 'b': return 'black'
     if l == 'w': return 'white'
     return None
+
+# Math
 
 def add_tuples(a, b):
 	return a[0] + b[0], a[1] + b[1]
@@ -35,30 +43,21 @@ def count_material_advantage(board_matrix, color) -> int:
                     advantage += factor * 3
     return advantage
 
-def transform(board_matrix, p1, p2) -> List[Tuple[tuple, bool]]:
-    r, c = p2[0], p2[1]
-    piece_code = board_matrix[p1[0]][p1[1]]
-    special = []
-    if piece_code[1] == 'k':
-        displacement = c - p1[1]
-        special.append((p1, True))
-        if displacement == 2:  # the player is trying a small castle
-            board_matrix[r][c - 1] = board_matrix[r][c + 1]  # update matrix
-            board_matrix[r][c + 1] = None  # update matrix
-            special.append(((r, c-1), True))
-        elif displacement == -2:  # the player is trying a big castle
-            board_matrix[r][c + 1] = board_matrix[r][c - 2]  # update matrix
-            board_matrix[r][c - 2] = None  # update matrix
-            special.append(((r, c+1), True))
-    elif piece_code[1] == 'r':
-        special.append((p1, True))
-    elif piece_code[1] == 'p':  # update instance
-        if abs(r - p1[0]) == 2: # double step
-            special.append((p1, True))
-        else:
-            special.append((p1, False))
-            if c != p1[1] and not board_matrix[r][c]:  # en passant
-                board_matrix[p1[0]][c] = None  
-        board_matrix[r][c] = piece_code  # update matrix
-        board_matrix[p1[0]][p1[1]] = None  # update matrix
-        return
+# Others
+
+def str_to_status(name):
+    if name == 'NORMAL':
+        return Status.NORMAL
+    elif name == 'CHECK':
+        return Status.CHECK
+    elif name == 'CHECKMATE':
+        return Status.CHECKMATE
+    elif name == 'DRAW_REPETITION':
+        return Status.DRAW_REPETITION
+    elif name == 'DRAW_STALEMATE':
+        return Status.DRAW_STALEMATE
+    elif name == 'DRAW_MATERIAL':
+        return Status.DRAW_MATERIAL
+    elif name == 'DRAW_PROGRESSION':
+        return Status.DRAW_PROGRESSION
+    return None
