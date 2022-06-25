@@ -1,6 +1,6 @@
 import pygame
 import pygame.freetype as ft
-from ui.screens.game_screen import GameScreen
+from ui.screens.game_options import GameOptions
 from ui.screens.generic_screen import GenericScreen
 from ui.screens.navigator import Navigator
 
@@ -17,7 +17,8 @@ class GameMenu(GenericScreen):
 
     def on_event(self, event) -> None:
         if event.type == pygame.MOUSEBUTTONUP:
-            Navigator().show(GameScreen())
+            # NOTE - mantain this screen on stack
+            Navigator().show(GameOptions())
         return None
 
     def on_loop(self) -> None:

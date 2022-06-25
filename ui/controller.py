@@ -32,6 +32,7 @@ class Controller:
         self._PP_COUNTER_VALUE = 1
         self._pp_counter_until_piece_selection = self._PP_COUNTER_VALUE
         self._pp_look_promotion = False
+        self.selected_options = None
 
     def init_board(self):
         # add tiles
