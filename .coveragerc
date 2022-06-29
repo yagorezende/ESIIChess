@@ -1,0 +1,11 @@
+[run]
+    branch=true
+    source=.
+    omit=./tests/*
+[report]
+    precision=2
+    omit=testMain.py
+    skip_empty=true
+    show_missing=true
+[lcov]
+    output=lcov.info
