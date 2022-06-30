@@ -271,5 +271,5 @@ class TestReferee(unittest.TestCase):
 
 def suites() -> Dict[ts.TestSuites, List[unittest.TestCase]]:
     return {
-        ts.TestSuites.SMOKE_TESTING: [TestReferee('test_turn')]
+        ts.TestSuites.GAME_LOGIC: [TestReferee('test_turn')]
     }
