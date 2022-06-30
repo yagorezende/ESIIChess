@@ -16,12 +16,14 @@ import sys
 import unittest
 from typing import Dict, List, Set
 
-import tests.logic.board as tlb
+import tests.logic.referee_unit as tlr_unit
 import tests.test_suites as ts
 
 _suites: Dict[ts.TestSuites, Set[unittest.TestCase]] = {}
 # NOTE - gather tests from modules
-_suites_list: List[Dict[ts.TestSuites, List[unittest.TestCase]]] = []
+_suites_list: List[Dict[ts.TestSuites, List[unittest.TestCase]]] = [
+        tlr_unit.suites()
+]
 # NOTE - extend _suites with _suites_list
 for d in _suites_list:
     for suite, tests in d.items():
