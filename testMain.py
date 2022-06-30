@@ -1,4 +1,3 @@
-#! python
 """
 To run tests:
 python -B ./testMain.py [suite1 ]...
@@ -15,39 +14,32 @@ python -m coverage lcov
 
 import sys
 import unittest
-from enum import Enum, auto
 from typing import Dict, List, Set
 
 import tests.logic.board as tlb
+import tests.test_suites as ts
 
+_suites: Dict[ts.TestSuites, Set[unittest.TestCase]] = {}
+# NOTE - gather tests from modules
+_suites_list: List[Dict[ts.TestSuites, List[unittest.TestCase]]] = []
+# NOTE - extend _suites with _suites_list
+for d in _suites_list:
+    for suite, tests in d.items():
+        if suite not in _suites:
+            _suites[suite] = set()
+        _suites[suite].update(tests)
 
-class TestSuites(Enum):
-    SMOKE_TESTING = auto()
-    BOARD_POSITIONS = auto()
-
-
-_suites: Dict[TestSuites, List[unittest.TestCase]] = {
-    TestSuites.SMOKE_TESTING: [],
-    TestSuites.BOARD_POSITIONS: [
-        tlb.TestBoardLogic('test_king_positions'),
-        tlb.TestBoardLogic('test_queen_positions'),
-        tlb.TestBoardLogic('test_rook_positions'),
-        tlb.TestBoardLogic('test_bishop_positions'),
-        tlb.TestBoardLogic('test_knight_positions'),
-        tlb.TestBoardLogic('test_pawn_positions')
-    ]
-}
 
 def main(argv):
-    runner = unittest.TextTestRunner()
+    runner = unittest.TextTestRunner(verbosity=2)
     tests = unittest.TestSuite()
-    desired_test_suites: Set[TestSuites] = set()
+    desired_test_suites: Set[ts.TestSuites] = set()
     not_found_test_suites: Set[str] = set()
     # -----   -----
     for suite_name in argv:
         upper_name = suite_name.upper()
         try:
-            desired_test_suites.add(TestSuites[upper_name])
+            desired_test_suites.add(ts.TestSuites[upper_name])
         except KeyError:
             not_found_test_suites.add(suite_name)
     # -----   -----
@@ -62,6 +54,7 @@ def main(argv):
     if len(not_found_test_suites) > 0:
         print(
             f"""\n{'+'*70}\nSUITE(S) NOT FOUND:\n{not_found_test_suites}\n""")
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])
