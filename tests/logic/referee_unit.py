@@ -1,6 +1,6 @@
 import unittest
 import unittest.mock as mock
-from typing import Dict, List, NamedTuple, Tuple, Union
+from typing import Dict, List, Literal, NamedTuple, Tuple, Union
 
 import tests.test_suites as ts
 import ui.board
@@ -31,6 +31,15 @@ class TestTurnResult(NamedTuple):
     pawn2_has_jumped: Union[bool, None]
 
 
+class MatInsufPieceInput(NamedTuple):
+    id: int
+    type: str
+    color: str
+    active: bool
+    row: int
+    column: int
+
+
 class TestReferee(unittest.TestCase):
     def __init__(self, methodName: str = ...) -> None:
         super().__init__(methodName)
@@ -52,10 +61,8 @@ class TestReferee(unittest.TestCase):
         return None
 
     def test_turn(self) -> None:
-        """
-        Change turn to oponent and also prevent en passants out of the right turn.
-        """
-    # SECTION - CONFIGURE TEST
+        # NOTE - Change turn to oponent and also prevent en passants out of the right turn.
+        # SECTION - CONFIGURE TEST
         runs: List[Tuple[TestTurnResult, TestTurnConfig]] = []
         # NOTE (0): - w -> b; without a b pawn;
         runs.append((
@@ -71,7 +78,7 @@ class TestReferee(unittest.TestCase):
                 pawn1_exist=False, pawn1_active=False, pawn1_has_jumped=False,
                 k_pawn2='wp1',
                 pawn2_exist=True, pawn2_active=True, pawn2_has_jumped=True,
-                pieces=self._load_pieces([
+                pieces=self._test_turn_load_pieces([
                     [None] * 8,
                     [None] * 8,
                     [None] * 8,
@@ -95,7 +102,7 @@ class TestReferee(unittest.TestCase):
                 pawn1_exist=True, pawn1_active=True, pawn1_has_jumped=False,
                 k_pawn2='wp1',
                 pawn2_exist=True, pawn2_active=True, pawn2_has_jumped=True,
-                pieces=self._load_pieces([
+                pieces=self._test_turn_load_pieces([
                     [None] * 8,
                     [None] * 8,
                     [None] * 8,
@@ -119,7 +126,7 @@ class TestReferee(unittest.TestCase):
                 pawn1_exist=True, pawn1_active=True, pawn1_has_jumped=True,
                 k_pawn2='wp1',
                 pawn2_exist=True, pawn2_active=True, pawn2_has_jumped=True,
-                pieces=self._load_pieces([
+                pieces=self._test_turn_load_pieces([
                     [None] * 8,
                     [None] * 8,
                     [None] * 8,
@@ -143,7 +150,7 @@ class TestReferee(unittest.TestCase):
                 pawn1_exist=True, pawn1_active=True, pawn1_has_jumped=True,
                 k_pawn2='wp1',
                 pawn2_exist=False, pawn2_active=False, pawn2_has_jumped=False,
-                pieces=self._load_pieces([
+                pieces=self._test_turn_load_pieces([
                     [None] * 8,
                     [None] * 8,
                     [None] * 8,
@@ -167,7 +174,7 @@ class TestReferee(unittest.TestCase):
                 pawn1_exist=True, pawn1_active=True, pawn1_has_jumped=True,
                 k_pawn2='wp1',
                 pawn2_exist=True, pawn2_active=True, pawn2_has_jumped=False,
-                pieces=self._load_pieces([
+                pieces=self._test_turn_load_pieces([
                     [None] * 8,
                     [None] * 8,
                     [None] * 8,
@@ -191,7 +198,7 @@ class TestReferee(unittest.TestCase):
                 pawn1_exist=True, pawn1_active=True, pawn1_has_jumped=True,
                 k_pawn2='wp1',
                 pawn2_exist=True, pawn2_active=True, pawn2_has_jumped=True,
-                pieces=self._load_pieces([
+                pieces=self._test_turn_load_pieces([
                     [None] * 8,
                     [None] * 8,
                     [None] * 8,
@@ -219,7 +226,10 @@ class TestReferee(unittest.TestCase):
     # !SECTION - TEST
         return None
 
-    def _load_pieces(self, board: List[List[Union[str, None]]]) -> Dict[str, ui.board.ChessPiece]:
+    def _test_turn_load_pieces(self, board: List[List[Union[str, None]]]) -> Dict[str, ui.board.ChessPiece]:
+        """
+        Load stubs to replace ChessPieces.
+        """
         pieces = {}
         for row in board:
             for piece in row:
@@ -268,8 +278,93 @@ class TestReferee(unittest.TestCase):
             pawn2_active=result_pawn2.active if result_pawn2 else None,
             pawn2_has_jumped=result_pawn2.has_jumped if result_pawn2 else None)
 
+    def test_material_insufficiency(self) -> None:
+        # SECTION - CONFIGURE TEST
+        runs: List[Tuple[bool, List[MatInsufPieceInput]]] = []
+        # NOTE (0): empty board
+        runs.append((False, []))
+        # NOTE (1): exists a pawn
+        runs.append((
+            False,
+            [MatInsufPieceInput(
+                id=8, type='p', color='w', active=True, row=1, column=8),
+             MatInsufPieceInput(
+                id=5, type='k', color='w', active=True, row=2, column=2),
+             MatInsufPieceInput(
+                id=5, type='k', color='b', active=True, row=5, column=2)]))
+        # NOTE (2): exists a rook
+        runs.append((
+            False,
+            [MatInsufPieceInput(
+                id=1, type='r', color='w', active=True, row=3, column=0),
+             MatInsufPieceInput(
+                id=5, type='k', color='w', active=True, row=2, column=2),
+             MatInsufPieceInput(
+                id=5, type='k', color='b', active=True, row=5, column=2)]))
+        # NOTE (3): exists a queen
+        runs.append((
+            False,
+            [MatInsufPieceInput(
+                id=4, type='q', color='w', active=True, row=7, column=8),
+             MatInsufPieceInput(
+                id=5, type='k', color='w', active=True, row=2, column=2),
+             MatInsufPieceInput(
+                id=5, type='k', color='b', active=True, row=5, column=2)]))
+        # NOTE (4): wk vs bk
+        runs.append((
+            True,
+            [MatInsufPieceInput(
+                id=5, type='k', color='w', active=True, row=2, column=2),
+             MatInsufPieceInput(
+                id=5, type='k', color='b', active=True, row=5, column=2)]))
+        # NOTE (5): wk vs bk, bb  TODO
+        runs.append((
+            False,
+            [MatInsufPieceInput(
+                id=5, type='k', color='w', active=True, row=2, column=2),
+             MatInsufPieceInput(
+                id=5, type='k', color='b', active=True, row=5, column=2),
+             MatInsufPieceInput(
+                id=4, type='q', color='w', active=True, row=7, column=8)]))
+        # NOTE (6): wk, wb vs bk  TODO
+        runs.append((
+            False,
+            [MatInsufPieceInput(
+                id=5, type='k', color='w', active=True, row=2, column=2),
+             MatInsufPieceInput(
+                id=5, type='k', color='b', active=True, row=5, column=2),
+             MatInsufPieceInput(
+                id=4, type='q', color='w', active=True, row=7, column=8)]))
+
+    # !SECTION - CONFIGURE TEST
+    # SECTION - TEST
+        for i in range(len(runs)):
+            with self.subTest(i=i):
+                expected = runs[i][0]
+                self.referee.pieces = self._mat_insuf_load_pieces(runs[i][1])
+                self.referee.board_matrix = runs[i][1]
+                result = self.referee.check_material_insufficiency()
+                self.assertEqual(result, expected)
+    # !SECTION - TEST
+        return None
+
+    def _mat_insuf_load_piece(self, pieces: List[MatInsufPieceInput]) -> Dict[str, ui.board.ChessPiece]:
+        d: Dict[str, ui.board.ChessPiece] = {}
+        for p in pieces:
+            # STUB - ui.board.ChessPiece
+            piece_mock = mock.create_autospec(
+                ui.board.ChessPiece, color=p.color, type=p.type)
+            piece_mock.active = True
+            piece_mock.type = p.type
+            piece_mock.get_board_pos = (p.row, p.column)
+            piece_mock.get_square_color = 'w' if (
+                p.row*8+p.column) % 2 else 'b'
+            d[f'{p.color}{p.type}{p.id}'] = piece_mock
+        return d
+
 
 def suites() -> Dict[ts.TestSuites, List[unittest.TestCase]]:
     return {
-        ts.TestSuites.GAME_LOGIC: [TestReferee('test_turn')]
+        ts.TestSuites.GAME_LOGIC: [TestReferee('test_turn')],
+        ts.TestSuites.GAME_TIES: [TestReferee('test_material_insufficiency')]
     }
