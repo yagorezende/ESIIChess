@@ -48,6 +48,19 @@ class TestCheckThreatInput(NamedTuple):  # TODO
     board_matrix: List[List[Union[str, None]]]
 
 
+class TestGetKingMovesInput(NamedTuple):
+    pos: Tuple[int, int]
+    turn_color: str
+    enemy_color: str
+    king_moved: bool
+    king_threatened: List[bool]
+
+    get_delta_moves: List[Tuple[int, int]]
+    board: List[List[Union[str, None]]]
+    # NOTE - piece color, type, has_moved
+    # pieces: Dict[str, ui.board.ChessPiece]
+
+
 class TestReferee(unittest.TestCase):
     def __init__(self, methodName: str = ...) -> None:
         super().__init__(methodName)
@@ -571,10 +584,119 @@ class TestReferee(unittest.TestCase):
         # --- !SECTION - TEST
         return None
 
+    def test_get_king_moves(self) -> None:
+        # --- SECTION - CONFIGURATIONS
+        runs: List[Tuple[List[Tuple[int, int]], TestGetKingMovesInput]] = []
+        # NOTE () - king threatened
+        board = [[]]
+        moves = [(7, 3), (6, 3), (6, 4), (6, 5), (7, 5)]
+        runs.append((
+            moves,
+            TestGetKingMovesInput(
+                pos=(7, 4),
+                turn_color='w',
+                enemy_color='b',
+                king_moved=True,
+                king_threatened=[True],
+                get_delta_moves=moves,
+                board=[
+                    [None]*8,
+                    [None]*8,
+                    [None]*8,
+                    [None]*8,
+                    [None]*8,
+                    [None]*8,
+                    [None]*8,
+                    [None, None, None, None, 'wk5', None, None, None]
+                ])))
+        # NOTE () - king not threatened, but moved
+        moves = [(7, 3), (6, 3), (6, 4), (6, 5), (7, 5)]
+        runs.append((
+            moves,
+            TestGetKingMovesInput(
+                pos=(7, 4),
+                turn_color='w',
+                enemy_color='b',
+                king_moved=True,
+                king_threatened=[False, False, False,
+                    True, False, False, False, True],
+                get_delta_moves=moves,
+                board=[
+                    [None]*8,
+                    [None]*8,
+                    [None]*8,
+                    [None]*8,
+                    [None]*8,
+                    [None]*8,
+                    [None]*8,
+                    ['wr1', None, None, None, 'wk5', None, None, 'wr8']
+                ])))
+        # NOTE () - king not threatened, but moved
+        moves = [(7, 3), (6, 3), (6, 4), (6, 5), (7, 5)]
+        runs.append((
+            moves,
+            TestGetKingMovesInput(
+                pos=(7, 4),
+                turn_color='w',
+                enemy_color='b',
+                king_moved=False,
+                king_threatened=[False, False, False, False, False, False],
+                get_delta_moves=moves,
+                board=[
+                    [None]*8,
+                    [None]*8,
+                    [None]*8,
+                    [None]*8,
+                    [None]*8,
+                    [None]*8,
+                    [None]*8,
+                    ['wr1', None, None, None, 'wk5', None, None, 'wr8']
+                ])))
+        # --- !SECTION - CONFIGURATIONS
+        # --- SECTION - TEST
+        for i, (expected, input_config) in enumerate(runs):
+            with self.subTest(i=i), \
+                mock.patch.multiple(
+                    self.referee, spec=True,
+                    get_delta_moves=lambda pos, full_type: input_config.get_delta_moves,
+                    enemy_color=lambda: input_config.enemy_color,
+                    check_threat=mock.DEFAULT,
+                    check_void=self._check_void) as mocks:
+                mocks['check_threat'].side_effect = input_config.king_threatened
+                self.referee.turn_color = input_config.turn_color
+                self.referee.board_matrix = input_config.board
+                self.referee.pieces = self._test_get_king_moves_load_pieces(
+                    input_config)
+                # --- SECTION - beeing tested
+                result = self.referee.get_king_moves(input_config.pos)
+                # --- !SECTION - beeing tested
+                self.assertEqual(set(expected), set(result))
+        # --- !SECTION - TEST
+        return None
+
+    def _test_get_king_moves_load_pieces(self, input_config: TestGetKingMovesInput) -> Dict[str, ui.board.ChessPiece]:
+        pieces = {}
+        for row in input_config.board:
+            for k_piece in row:
+                if k_piece:
+                    # STUB - ui.board.ChessPiece
+                    piece_mock = mock.create_autospec(
+                        ui.board.ChessPiece, color=k_piece[0], type=k_piece[1])
+                    # NOTE - default values for piece
+                    if k_piece[0] == input_config.turn_color:
+                        piece_mock.has_moved = input_config.king_moved
+                    else:
+                        piece_mock.has_moved = False
+                        piece_mock.color = k_piece[0]
+                        piece_mock.type = k_piece[1]
+                    pieces[k_piece] = piece_mock
+        return pieces
+
 
 def suites() -> Dict[ts.TestSuites, List[unittest.TestCase]]:
     return {
         ts.TestSuites.GAME_LOGIC: [TestReferee('test_turn')],
         ts.TestSuites.GAME_TIES: [TestReferee('test_material_insufficiency')],
-        ts.TestSuites.SMOKE_TESTING: [TestReferee('test_check_threat')]
+        ts.TestSuites.SMOKE_TESTING: [TestReferee('test_check_threat')],
+        ts.TestSuites.GAME_LOGIC: [TestReferee('test_get_king_moves')]
     }
