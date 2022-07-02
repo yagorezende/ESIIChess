@@ -62,7 +62,7 @@ class TestReferee(unittest.TestCase):
 
     def test_turn(self) -> None:
         # NOTE - Change turn to oponent and also prevent en passants out of the right turn.
-        # SECTION - CONFIGURE TEST
+        # --- SECTION - CONFIGURE TEST
         runs: List[Tuple[TestTurnResult, TestTurnConfig]] = []
         # NOTE (0): - w -> b; without a b pawn;
         runs.append((
@@ -209,21 +209,21 @@ class TestReferee(unittest.TestCase):
                     [None] * 8]))
         ))
 
-    # !SECTION - CONFIGURE TEST
-    # SECTION - TEST
+    # --- !SECTION - CONFIGURE TEST
+    # --- SECTION - TEST
         # STUB - self.referee.update_status
         with mock.patch.object(self.referee, 'update_status') as update_status_mock:
             update_status_mock.return_value = None
             for i in range(len(runs)):
                 with self.subTest(i=i):
                     self._configure_test_turn(runs[i][1])
-                # SECTION - beeing tested
+                # --- SECTION - beeing tested
                     self.referee.turn()
-                # !SECTION
+                # --- !SECTION
                     result = self._get_test_turn_result(
                         runs[i][1].k_pawn1, runs[i][1].k_pawn2)
                     self.assertEqual(result, runs[i][0])  # NOTE - compare
-    # !SECTION - TEST
+    # --- !SECTION - TEST
         return None
 
     def _test_turn_load_pieces(self, board: List[List[Union[str, None]]]) -> Dict[str, ui.board.ChessPiece]:
@@ -279,7 +279,7 @@ class TestReferee(unittest.TestCase):
             pawn2_has_jumped=result_pawn2.has_jumped if result_pawn2 else None)
 
     def test_material_insufficiency(self) -> None:
-    # SECTION - CONFIGURATION
+        # --- SECTION - CONFIGURATIONS
         runs: List[Tuple[bool, List[TestMatInsufInput]]] = []
         # NOTE (0): empty board
         runs.append((False, []))
@@ -366,20 +366,20 @@ class TestReferee(unittest.TestCase):
                 id=5, color='b', type='k', active=True, row=5, column=2),
              TestMatInsufInput(
                 id=0, color='b', type='b', active=True, row=7, column=0)]))
-    # !SECTION - CONFIGURATION
-    # SECTION - TEST
+        # --- !SECTION - CONFIGURATIONS
+        # --- SECTION - TEST
         for i, (expected, input_pieces) in enumerate(runs):
             # NOTE - test material insuficiency in multiple runs
             # NOTE - patch referee method that is not beeing tested with a stub
             with self.subTest(i=i), mock.patch.object(logic.referee.Referee, 'get_square_color') as get_square_color:
                 get_square_color.side_effect = \
-                    lambda p: 'w' if (p[0] % 2+p[0]*8+p[1]) % 2 else 'b'
+                    lambda p: 'b' if (p[0] % 2+p[0]*8+p[1]) % 2 else 'w'
                 self.referee.pieces = self._mat_insuf_load_pieces(input_pieces)
-            # SECTION - beeing tested
+            # --- SECTION - beeing tested
                 result = self.referee.check_material_insufficiency()
-            # !SECTION - beeing tested
+            # --- !SECTION - beeing tested
                 self.assertEqual(result, expected)
-    # !SECTION - TEST
+        # --- !SECTION - TEST
         return None
 
     def _mat_insuf_load_pieces(self, pieces: List[TestMatInsufInput]) -> Dict[str, ui.board.ChessPiece]:

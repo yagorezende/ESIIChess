@@ -1,7 +1,9 @@
 [run]
     branch=true
     source=.
-    omit=./tests/*
+    omit=
+        ./testMain.py
+        ./tests/*
 [report]
     precision=2
     omit=testMain.py
