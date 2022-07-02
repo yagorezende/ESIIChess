@@ -19,9 +19,12 @@ class GameScreen(GenericScreen):
         self.controller.init_board()
         return None
 
-    def on_event(self, event):
+    def on_event(self, event) -> None:
         if event.type == pygame.MOUSEBUTTONUP:
-            self.controller.on_click()
+            self.controller.on_click(event.pos)
+        elif event.type == pygame.KEYDOWN:
+            self.controller.on_pressing(event.unicode)
+        return None
 
     def on_loop(self) -> None:
         self.controller.on_loop()

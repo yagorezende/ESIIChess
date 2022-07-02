@@ -20,7 +20,6 @@ A **terceira apresentação** deve descrever como foram feitos testes de unidade
 
 # Links dos Artefatos
 * [**Cronograma**](https://app.clickup.com/31090974/v/li/192911696);
-* [**EAP**](https://drive.google.com/file/d/1AkqiTVwIHCJpKvP5-5TkK8RZFuyyG5Rd/view?usp=sharing);
 * [**Trello**](https://app.clickup.com/31090974/v/li/192911696);
 * [**Apresentação 1**](https://docs.google.com/presentation/d/1XmjNqxGJMln2TGwKV3dvB_hBVk2rhKxaURR8v17dOcg/edit?usp=sharing);
 * [**Apresentação 2**](https://docs.google.com/presentation/d/1r0kgRjSJ2F31BSJEnoXfflYqsWZmGCHcW8Ccvl2GaOQ/edit?usp=sharing);
