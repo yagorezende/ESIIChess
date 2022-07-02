@@ -2,7 +2,7 @@ from typing import Dict, List, Tuple
 from logic.const import INFINITE
 from logic.referee import Referee
 from ui.board import ChessPiece
-from random import uniform, choice
+from random import choice
 
 class Node():
 
@@ -82,11 +82,11 @@ class Bot():
         """
         Finds a move to proceed with the game.
         """
-        if self.level == 0 or self.referee.turn_counter < 3:
+        if self.level == 0:
             return self.random_action()
         return self.search(max_depth=self.level)
 
-    def random_action(self) -> tuple:
+    def random_action(self) -> Tuple[tuple, tuple]:
         """
         Returns a random move for a random piece.
         """
@@ -101,7 +101,7 @@ class Bot():
         pos = r_selection[0].get_board_pos()
         return pos, move
 
-    def evaluate_node(self, node: Node) -> float:
+    def evaluate_node(self, node: Node) -> int:
         """
         Function to evaluate a particular state.
         It returns a number that is greater the more the state
@@ -161,54 +161,47 @@ class Bot():
     def get_min_node(self, nodes: List[Node]) -> Node:
         """
         Returns the node with the smallest evaluation.
-        If two nodes are equally valued, one of them is randomly selected.
+        If two or more nodes are equally valued, one of them is randomly selected.
         """
         if not nodes:
             return None
-        min_node = None
-        min_adv = 10 ** 6
+        min_nodes = None
+        min_adv = INFINITE
         for node in nodes:
             node.evaluation = self.evaluate_node(node)
-            if node.evaluation < min_adv or node.evaluation == min_adv and uniform(0, 1) > 0.5:
-                min_node = node
+            if node.evaluation < min_adv:
+                min_nodes = [node]
                 min_adv = node.evaluation
-        return min_node
+            elif node.evaluation == min_adv:
+                min_nodes.append(node)
+        return choice(min_nodes)
     
-    def minimize(self, successors: List[Node], depth: int = 0, max_depth: int = 1):
+    def dive(self, successors: List[Node], depth: int = 0, max_depth: int = 1):
+        """
+        Finds the appropriete node according to the current level on the search tree.
+        """
+        factor = 1 if (depth % 2) == (max_depth % 2) else -1
         best = []
-        best_eval = INFINITE
+        best_eval = INFINITE * factor
         for successor in successors:
             aux = self.minimax(successor, depth=depth, max_depth=max_depth)
             if aux[1] == best_eval:
                 best.append(successor)
-            elif aux[1] < best_eval:
-                successor.evaluation = aux[1]
-                best_eval = aux[1]
-                best = [successor]
-        return choice(best), best_eval
-
-    def maximize(self, successors: List[Node], depth: int = 0, max_depth: int = 1):
-        best = []
-        best_eval = -INFINITE
-        for successor in successors:
-            aux = self.minimax(successor, depth=depth, max_depth=max_depth)
-            if aux[1] == best_eval:
-                best.append(successor)
-            elif aux[1] > best_eval:
+            elif aux[1] * factor < best_eval * factor:
                 successor.evaluation = aux[1]
                 best_eval = aux[1]
                 best = [successor]
         return choice(best), best_eval
     
     def minimax(self, node: Node, depth: int = 0, max_depth: int = 1) -> Tuple[Node, int]:
+        """
+        Minimax algorithm.
+        """
         successors = self.generate_successors(node)
-        if not successors:
+        if not successors: # the node is an endgame.
             backup = self.get_referee_info()
             self.set_referee_info(node.get_info())
-            if self.referee.check_threat(self.referee.find(node.turn_color + 'k5')):
-                node.evaluation = INFINITE
-            else:
-                node.evaluation = -INFINITE
+            node.evaluation = (-1) ** ((depth % 2) + (max_depth % 2) + 1) * INFINITE
             self.set_referee_info(backup)
             self.referee.board_matrix = self.board_matrix
             return node, node.evaluation
@@ -216,13 +209,7 @@ class Bot():
         if next_level >= max_depth: # next level is the leaf level, so we just get the minimum nodes from there.
             best = self.get_min_node(successors)
             return best, best.evaluation
-        if max_depth % 2: # leaf level is odd, so we minimize on odd depths.
-            if next_level % 2:
-                return self.minimize(successors, next_level, max_depth)
-            return self.maximize(successors, next_level, max_depth)
-        if next_level % 2: # leaf level is even, so we maximize on odd depths.
-            return self.maximize(successors, next_level, max_depth)
-        return self.minimize(successors, next_level, max_depth)
+        return self.dive(successors, next_level, max_depth)
 
     def get_referee_info(self) -> dict:
         """
@@ -262,6 +249,9 @@ class Bot():
         return
 
     def get_state(self) -> dict:
+        """
+        Returns relevant info about the AI.
+        """
         return {
             'level' : self.level,
             'color' : self.color,
@@ -269,6 +259,9 @@ class Bot():
             }
     
     def set_state(self, state: dict) -> None:
+        """
+        Sets relevant info about the AI.
+        """
         self.level = state['level']
         self.color = state['color']
         self.bottomup_orientation = state['bottomup_orientation']
