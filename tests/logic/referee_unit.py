@@ -31,7 +31,7 @@ class TestTurnResult(NamedTuple):
     pawn2_has_jumped: Union[bool, None]
 
 
-class MatInsufPieceInput(NamedTuple):
+class TestMatInsufInput(NamedTuple):
     id: int
     type: str
     color: str
@@ -279,87 +279,119 @@ class TestReferee(unittest.TestCase):
             pawn2_has_jumped=result_pawn2.has_jumped if result_pawn2 else None)
 
     def test_material_insufficiency(self) -> None:
-        # SECTION - CONFIGURE TEST
-        runs: List[Tuple[bool, List[MatInsufPieceInput]]] = []
+    # SECTION - CONFIGURATION
+        runs: List[Tuple[bool, List[TestMatInsufInput]]] = []
         # NOTE (0): empty board
         runs.append((False, []))
         # NOTE (1): exists a pawn
         runs.append((
             False,
-            [MatInsufPieceInput(
-                id=8, type='p', color='w', active=True, row=1, column=8),
-             MatInsufPieceInput(
-                id=5, type='k', color='w', active=True, row=2, column=2),
-             MatInsufPieceInput(
-                id=5, type='k', color='b', active=True, row=5, column=2)]))
+            [TestMatInsufInput(
+                id=8, color='w', type='p', active=True, row=1, column=7),
+             TestMatInsufInput(
+                id=5, color='w', type='k', active=True, row=2, column=2),
+             TestMatInsufInput(
+                id=5, color='b', type='k', active=True, row=5, column=2)]))
         # NOTE (2): exists a rook
         runs.append((
             False,
-            [MatInsufPieceInput(
-                id=1, type='r', color='w', active=True, row=3, column=0),
-             MatInsufPieceInput(
-                id=5, type='k', color='w', active=True, row=2, column=2),
-             MatInsufPieceInput(
-                id=5, type='k', color='b', active=True, row=5, column=2)]))
+            [TestMatInsufInput(
+                id=1, color='w', type='r', active=True, row=3, column=0),
+             TestMatInsufInput(
+                id=5, color='w', type='k', active=True, row=2, column=2),
+             TestMatInsufInput(
+                id=5, color='b', type='k', active=True, row=5, column=2)]))
         # NOTE (3): exists a queen
         runs.append((
             False,
-            [MatInsufPieceInput(
-                id=4, type='q', color='w', active=True, row=7, column=8),
-             MatInsufPieceInput(
-                id=5, type='k', color='w', active=True, row=2, column=2),
-             MatInsufPieceInput(
-                id=5, type='k', color='b', active=True, row=5, column=2)]))
+            [TestMatInsufInput(
+                id=4, color='w', type='q', active=True, row=7, column=7),
+             TestMatInsufInput(
+                id=5, color='w', type='k', active=True, row=2, column=2),
+             TestMatInsufInput(
+                id=5, color='b', type='k', active=True, row=5, column=2)]))
         # NOTE (4): wk vs bk
         runs.append((
             True,
-            [MatInsufPieceInput(
-                id=5, type='k', color='w', active=True, row=2, column=2),
-             MatInsufPieceInput(
-                id=5, type='k', color='b', active=True, row=5, column=2)]))
-        # NOTE (5): wk vs bk, bb  TODO
+            [TestMatInsufInput(
+                id=5, color='w', type='k', active=True, row=2, column=2),
+             TestMatInsufInput(
+                id=5, color='b', type='k', active=True, row=5, column=2)]))
+        # NOTE (5): wk vs bk, bb
         runs.append((
-            False,
-            [MatInsufPieceInput(
-                id=5, type='k', color='w', active=True, row=2, column=2),
-             MatInsufPieceInput(
-                id=5, type='k', color='b', active=True, row=5, column=2),
-             MatInsufPieceInput(
-                id=4, type='q', color='w', active=True, row=7, column=8)]))
-        # NOTE (6): wk, wb vs bk  TODO
+            True,
+            [TestMatInsufInput(
+                id=5, color='w', type='k', active=True, row=2, column=2),
+             TestMatInsufInput(
+                id=5, color='b', type='k', active=True, row=5, column=2),
+             TestMatInsufInput(
+                id=0, color='b', type='b', active=True, row=7, column=7)]))
+        # NOTE (6): wk, wb vs bk
         runs.append((
-            False,
-            [MatInsufPieceInput(
-                id=5, type='k', color='w', active=True, row=2, column=2),
-             MatInsufPieceInput(
-                id=5, type='k', color='b', active=True, row=5, column=2),
-             MatInsufPieceInput(
-                id=4, type='q', color='w', active=True, row=7, column=8)]))
-
-    # !SECTION - CONFIGURE TEST
+            True,
+            [TestMatInsufInput(
+                id=5, color='w', type='k', active=True, row=2, column=2),
+             TestMatInsufInput(
+                id=0, color='w', type='b', active=True, row=0, column=7),
+             TestMatInsufInput(
+                id=5, color='b', type='k', active=True, row=5, column=2)
+             ]))
+        # NOTE (7): wk vs bk, bn
+        runs.append((
+            True,
+            [TestMatInsufInput(
+                id=5, color='w', type='k', active=True, row=2, column=2),
+             TestMatInsufInput(
+                id=5, color='b', type='k', active=True, row=5, column=2),
+             TestMatInsufInput(
+                id=0, color='b', type='n', active=True, row=7, column=7)]))
+        # NOTE (8): wk, wn vs bk
+        runs.append((
+            True,
+            [TestMatInsufInput(
+                id=5, color='w', type='k', active=True, row=2, column=2),
+             TestMatInsufInput(
+                id=0, color='w', type='n', active=True, row=0, column=7),
+             TestMatInsufInput(
+                id=5, color='b', type='k', active=True, row=5, column=2)
+             ]))
+        # NOTE (9): wk, wb vs bk, bb
+        runs.append((
+            True,
+            [TestMatInsufInput(
+                id=5, color='w', type='k', active=True, row=2, column=2),
+             TestMatInsufInput(
+                id=0, color='w', type='b', active=True, row=0, column=7),
+             TestMatInsufInput(
+                id=5, color='b', type='k', active=True, row=5, column=2),
+             TestMatInsufInput(
+                id=0, color='b', type='b', active=True, row=7, column=0)]))
+    # !SECTION - CONFIGURATION
     # SECTION - TEST
-        for i in range(len(runs)):
-            with self.subTest(i=i):
-                expected = runs[i][0]
-                self.referee.pieces = self._mat_insuf_load_pieces(runs[i][1])
-                self.referee.board_matrix = runs[i][1]
+        for i, (expected, input_pieces) in enumerate(runs):
+            # NOTE - test material insuficiency in multiple runs
+            # NOTE - patch referee method that is not beeing tested with a stub
+            with self.subTest(i=i), mock.patch.object(logic.referee.Referee, 'get_square_color') as get_square_color:
+                get_square_color.side_effect = \
+                    lambda p: 'w' if (p[0] % 2+p[0]*8+p[1]) % 2 else 'b'
+                self.referee.pieces = self._mat_insuf_load_pieces(input_pieces)
+            # SECTION - beeing tested
                 result = self.referee.check_material_insufficiency()
+            # !SECTION - beeing tested
                 self.assertEqual(result, expected)
     # !SECTION - TEST
         return None
 
-    def _mat_insuf_load_piece(self, pieces: List[MatInsufPieceInput]) -> Dict[str, ui.board.ChessPiece]:
+    def _mat_insuf_load_pieces(self, pieces: List[TestMatInsufInput]) -> Dict[str, ui.board.ChessPiece]:
         d: Dict[str, ui.board.ChessPiece] = {}
         for p in pieces:
             # STUB - ui.board.ChessPiece
             piece_mock = mock.create_autospec(
-                ui.board.ChessPiece, color=p.color, type=p.type)
+                spec=ui.board.ChessPiece, color=p.color, type=p.type)
             piece_mock.active = True
             piece_mock.type = p.type
-            piece_mock.get_board_pos = (p.row, p.column)
-            piece_mock.get_square_color = 'w' if (
-                p.row*8+p.column) % 2 else 'b'
-            d[f'{p.color}{p.type}{p.id}'] = piece_mock
+            piece_mock.get_board_pos.return_value = (p.row, p.column)
+            d[f'{p.color}{p.type}{str(p.id)}'] = piece_mock
         return d
 
 
