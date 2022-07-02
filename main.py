@@ -10,6 +10,8 @@ class App:
         self._running = True
         self.fps_clock = None
         self._display_surf = None
+        self._display_flags = pygame.HWSURFACE | pygame.DOUBLEBUF
+        self._is_fullscreen: bool = False
         self._FPS_LIMIT = 60
         self.size = self.width, self.height = 640, 640
         self.navigator = Navigator()
@@ -17,7 +19,7 @@ class App:
     def on_init(self):
         pygame.init()
         self._display_surf = pygame.display.set_mode(
-            self.size, pygame.HWSURFACE | pygame.DOUBLEBUF
+            self.size, self._display_flags
         )
         self._running = True
         self.fps_clock = pygame.time.Clock()
@@ -30,6 +32,15 @@ class App:
     def on_event(self, event):
         if event.type == pygame.QUIT:
             self._running = False
+        if event.type == pygame.KEYUP and event.key == pygame.K_F11:
+            if self._is_fullscreen:
+                self._display_flags &= ~pygame.FULLSCREEN
+                self._display_flags &= ~pygame.SCALED
+            else:
+                self._display_flags |= pygame.FULLSCREEN
+                self._display_flags |= pygame.SCALED
+            self._display_surf = pygame.display.set_mode(self.size, self._display_flags)
+            self._is_fullscreen = not self._is_fullscreen
 
     def on_loop(self):
         """

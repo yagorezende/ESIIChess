@@ -24,12 +24,12 @@ class GameMenu(GenericScreen):
         return super().on_loop()
 
     def on_render(self, scr_surf: pygame.Surface) -> None:
-        title_surf, title_rect = self.default_font.render(
-            "PyChess",
+        title_surf, title_rect = self.defaut_font.render(
+            "ESIIChess",
             fgcolor=(255, 255, 255),
             size=scr_surf.get_height()/8)
-        press_any_surf, press_any_rect = self.default_font.render(
-            "Click to start",
+        press_any_surf, press_any_rect = self.defaut_font.render(
+            "click to start",
             fgcolor=(255, 255, 255),
             size=scr_surf.get_height()/32)
         # ----------
