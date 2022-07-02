@@ -1,10 +1,10 @@
 import json
 import os
 from typing import Dict, List
-from logic.const import BOARD_MATRIX_1, SAVE_FILE, TILE_SIZE, Status
+from logic.const import BOARD_MATRIX_1, BOARD_MATRIX_2, SAVE_FOLDER, TILE_SIZE, Status
 from logic.referee import Referee
 from logic.bot import Bot
-from logic.tools import count_material_advantage, letter_to_color, show_board_matrix, show_dic
+from logic.tools import count_material_advantage, letter_to_color, show_board_matrix
 
 from ui.board import BoardTile, ChessPiece
 from ui.screens.navigator import Navigator
@@ -59,11 +59,13 @@ class Controller:
                 self.board_matrix[r][c + 1] = None  # update matrix
                 rook = self.pieces[self.board_matrix[r][c - 1]]
                 rook.move(((c - 1) * TILE_SIZE, r * TILE_SIZE))
+                rook.has_moved = True
             elif displacement == -2:  # the player is trying a big castle
                 self.board_matrix[r][c + 1] = self.board_matrix[r][c - 2]  # update matrix
                 self.board_matrix[r][c - 2] = None  # update matrix
                 rook = self.pieces[self.board_matrix[r][c + 1]]
                 rook.move(((c + 1) * TILE_SIZE, r * TILE_SIZE))
+                rook.has_moved = True
         elif piece.type == 'p':  # update instance
             if abs(r - piece_pos[0]) == 2: # double step
                 self.referee.rushed_pawn = (r, c)
@@ -73,7 +75,6 @@ class Controller:
                     self.board_matrix[piece_pos[0]][c] = None
                     self.referee.no_progression_counter = 0
                     self.referee.pieces_counter -= 1
-
         self.board_matrix[r][c] = self.selected  # update matrix
         self.board_matrix[piece_pos[0]][piece_pos[1]] = None  # update matrix
 
@@ -126,6 +127,8 @@ class Controller:
             self.load_game()
         elif key == 'i':
             self.show_info()
+        # elif key == 'b':
+        #     self.load_game('previous')
         return None
 
     def manage_move(self, move) -> None:
@@ -165,7 +168,7 @@ class Controller:
     def on_loop(self) -> None:
         if self.referee.check_termination():
             return None
-        if self.is_AI_turn():
+        if self.is_bot_turn():
             action = self.bot.get_action()
             self.selected = self.board_matrix[action[0][0]][action[0][1]]
             if self.board_matrix[action[1][0]][action[1][1]]:
@@ -215,7 +218,7 @@ class Controller:
             pawn_k = self.referee.get_pawn_promote()
             if (pawn_k):
                 # NOTE - promote to a new type
-                if self.is_AI_turn():
+                if self.is_bot_turn():
                     pass # TODO: implement autopromotion for AI.
                 else:
                     self.open_piece_selection_screen(pawn_k)
@@ -244,7 +247,7 @@ class Controller:
         Navigator().show(scr)
         return
     
-    def is_AI_turn(self):
+    def is_bot_turn(self):
         return not self.multiplayer and self.referee.turn_color == self.bot.color
 
     def check_status(self) -> None:
@@ -252,6 +255,15 @@ class Controller:
         Call the referee to check the game status.
         """
         return self.referee.update_status()
+
+    def clear(self) -> None:
+        self.selected = None
+        self.offset = 0
+        self.highlight = []
+        self._PP_COUNTER_VALUE = 1
+        self._pp_counter_until_piece_selection = self._PP_COUNTER_VALUE
+        self._pp_look_promotion = False
+        return None
 
     def get_state(self) -> dict:
         """
@@ -295,35 +307,39 @@ class Controller:
         self.multiplayer = state['multiplayer']
         self.referee.board_matrix = self.board_matrix
         self.referee.set_state(state['referee'])
+        self.bot.board_matrix = self.board_matrix
         self.bot.set_state(state['bot'])
         return None
     
-    def save_game(self) -> None:
-        with open(SAVE_FILE, 'w') as file:
+    def save_game(self, filename: str = 'save') -> None:
+        with open(SAVE_FOLDER + filename + '.json', 'w') as file:
             json.dump(self.get_state(), file, indent=4)
         print('Game state saved.')
         return None
 
-    def load_game(self) -> None:
-        if os.path.exists(SAVE_FILE):
-            with open(SAVE_FILE) as file:
+    def load_game(self, filename: str = 'save') -> None:
+        if os.path.exists(SAVE_FOLDER + filename + '.json'):
+            with open(SAVE_FOLDER + filename + '.json') as file:
                 self.set_state(json.load(file))
             print(f'''Game state loaded. {letter_to_color(self.referee.turn_color).capitalize()} plays next.''')
         else:
             print('There is no game state to be loaded.')
+        self.clear()
         return None
 
     def restart(self) -> None:
+        self.pieces.clear()
         self.load_pieces()
         self.board_matrix = [row.copy() for row in BOARD_MATRIX_1]
         self.referee = Referee(self.board_matrix, self.pieces)
         self.bot = Bot(
-            level=2,
+            level=self.bot.level,
             referee=self.referee,
             board_matrix=self.board_matrix,
             pieces=self.pieces,
             color='b',
             bottomup_orientation=False)
+        self.clear()
         print('#' * 50  + '\nNew Game')
         return None
 
@@ -337,7 +353,6 @@ class Controller:
                                                                       offset=self.offset)
             except Exception as e:
                 print(f"Could not import w{order[i]}.png")
-
             # black
             self.pieces['bp' + str(i + 1)] = ChessPiece(color='b', x=i * TILE_SIZE, y=1 * TILE_SIZE, offset=self.offset)
             try:

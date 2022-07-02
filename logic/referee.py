@@ -155,6 +155,7 @@ class Referee():
         for r in range(8):
             for c in range(8):
                 key = self.board_matrix[r][c]
+                if not key: continue
                 if key[1] == 'p' or key[1] == 'r' or key[1] == 'q':
                     return False
                 if key[1] == 'b':
@@ -162,8 +163,8 @@ class Referee():
                         wbishop_pos = (r, c)
                     else:
                         bbishop_pos = (r, c)
-            d = w_sum if key[0] == 'w' else b_sum
-            d[key[1]] = d.get(key[1], 0) + 1
+                d = w_sum if key[0] == 'w' else b_sum
+                d[key[1]] = d.get(key[1], 0) + 1
 
         w_count = set(w_sum.items())
         b_count = set(b_sum.items())

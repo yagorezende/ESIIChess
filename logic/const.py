@@ -26,12 +26,13 @@ DELTAS: Dict[str, List[Tuple[int, int]]] = {
     ]
 }
 
+INFINITE = 2**31-1
 TILE_SIZE = 80
 REPETITIONS_FOR_DRAW = 3
 NO_PROGRESSION_LIMIT = 50
 INITIAL_STATE_1 = 'brbnbbbqbkbbbnbrbpbpbpbpbpbpbpbp00000000000000000000000000000000wpwpwpwpwpwpwpwpwrwnwbwqwkwbwnwr'
 INITIAL_STATE_2 = 'wrwnwbwqwkwbwnwrwpwpwpwpwpwpwpwp00000000000000000000000000000000bpbpbpbpbpbpbpbpbrbnbbbqbkbbbnbr'
-SAVE_FILE = 'logic\\save.json'
+SAVE_FOLDER = 'logic\\gamestate\\'
 BOARD_MATRIX_1 = [
     ['br1', 'bn2', 'bb3', 'bq4', 'bk5', 'bb6', 'bn7', 'br8'],
     ['bp1', 'bp2', 'bp3', 'bp4', 'bp5', 'bp6', 'bp7', 'bp8'],
