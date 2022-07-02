@@ -8,7 +8,7 @@ from ui.screens.navigator import Navigator
 class GameMenu(GenericScreen):
     def __init__(self) -> None:
         super().__init__()
-        self.defaut_font = ft.SysFont("", 20)
+        self.default_font = ft.SysFont("", 20)
 
     # ----------
 
@@ -24,12 +24,12 @@ class GameMenu(GenericScreen):
         return super().on_loop()
 
     def on_render(self, scr_surf: pygame.Surface) -> None:
-        title_surf, title_rect = self.defaut_font.render(
-            "ESIIChess",
+        title_surf, title_rect = self.default_font.render(
+            "PyChess",
             fgcolor=(255, 255, 255),
             size=scr_surf.get_height()/8)
-        press_any_surf, press_any_rect = self.defaut_font.render(
-            "click to start",
+        press_any_surf, press_any_rect = self.default_font.render(
+            "Click to start",
             fgcolor=(255, 255, 255),
             size=scr_surf.get_height()/32)
         # ----------
