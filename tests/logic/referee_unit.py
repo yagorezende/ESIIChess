@@ -1,6 +1,6 @@
 import unittest
 import unittest.mock as mock
-from typing import Dict, List, Literal, NamedTuple, Tuple, Union
+from typing import Callable, Dict, List, NamedTuple, Tuple, Union
 
 import tests.test_suites as ts
 import ui.board
@@ -40,6 +40,14 @@ class TestMatInsufInput(NamedTuple):
     column: int
 
 
+class TestCheckThreatInput(NamedTuple):  # TODO
+    pos: Tuple[int, int]
+    enemy_color: str
+    # NOTE - bool(turn_color == bottom_color)
+    bottomup_orientation: Callable[[], bool]
+    board_matrix: List[List[Union[str, None]]]
+
+
 class TestReferee(unittest.TestCase):
     def __init__(self, methodName: str = ...) -> None:
         super().__init__(methodName)
@@ -59,6 +67,15 @@ class TestReferee(unittest.TestCase):
         """
         self.referee = None
         return None
+
+    def _check_enemy_presence(self, pos, enemy_color) -> bool:
+        return 0 <= pos[0] < 8 and 0 <= pos[1] < 8 and self.referee.board_matrix[pos[0]][pos[1]] and self.referee.board_matrix[pos[0]][pos[1]][0] == enemy_color
+
+    def _check_void(self, pos) -> bool:
+        return 0 <= pos[0] < 8 and 0 <= pos[1] < 8 and not self.referee.board_matrix[pos[0]][pos[1]]
+
+    def _add_tuples(self, t0, t1) -> Tuple[int, int]:
+        return (t0[0]+t1[0], t0[1]+t1[1])
 
     def test_turn(self) -> None:
         # NOTE - Change turn to oponent and also prevent en passants out of the right turn.
@@ -394,9 +411,170 @@ class TestReferee(unittest.TestCase):
             d[f'{p.color}{p.type}{str(p.id)}'] = piece_mock
         return d
 
+    def test_check_threat(self) -> None:
+        '''
+        Test if a position is beeing threatened
+        '''
+        # --- SECTION - CONFIGURATION
+        runs: List[Tuple[bool, TestCheckThreatInput]] = []
+        # NOTE (0) - test not beeing threatened
+        runs.append((
+            False,
+            TestCheckThreatInput(
+                pos=(3, 1),
+                enemy_color='w',
+                bottomup_orientation=lambda: False,
+                board_matrix=[
+                    [None]*8,
+                    ['bp1', *[None]*7],
+                    [None]*8,
+                    [None, 'wp2', *[None]*6],
+                    [None]*8,
+                    [None]*8,
+                    [None]*8,
+                    [None]*8])))
+        # # NOTE (1) - test beeing threatened by a black pawn
+        runs.append((
+            True,
+            TestCheckThreatInput(
+                pos=(3, 1),
+                enemy_color='b',
+                bottomup_orientation=lambda: True,
+                board_matrix=[
+                    [None]*8,
+                    [None]*8,
+                    ['bp1', *[None]*7],
+                    [None, 'wp2', *[None]*6],
+                    [None]*8,
+                    [None]*8,
+                    [None]*8,
+                    [None]*8])))
+        # # NOTE (2) - test beeing threatened by a white pawn
+        runs.append((
+            True,
+            TestCheckThreatInput(
+                pos=(3, 1),
+                enemy_color='w',
+                bottomup_orientation=lambda: False,
+                board_matrix=[
+                    [None]*8,
+                    [None]*8,
+                    [None]*8,
+                    [None, 'bp2', *[None]*6],
+                    ['wp1', *[None]*7],
+                    [None]*8,
+                    [None]*8,
+                    [None]*8])))
+        # NOTE (3) - test beeing threatened by a white rook
+        runs.append((
+            True,
+            TestCheckThreatInput(
+                pos=(3, 1),
+                enemy_color='w',
+                bottomup_orientation=lambda: False,
+                board_matrix=[
+                    [None, 'wr1', *[None]*6],
+                    [None]*8,
+                    [None]*8,
+                    [None, 'bp2', *[None]*6],
+                    [None]*8,
+                    [None]*8,
+                    [None]*8,
+                    [None]*8])))
+        # NOTE (4) - test beeing threatened by a white bishop
+        runs.append((
+            True,
+            TestCheckThreatInput(
+                pos=(3, 1),
+                enemy_color='w',
+                bottomup_orientation=lambda: False,
+                board_matrix=[
+                    [None]*8,
+                    [None]*8,
+                    [None]*8,
+                    [None, 'bp2', *[None]*6],
+                    [None]*8,
+                    [None]*8,
+                    [None]*8,
+                    [*[None]*5, 'wb6', *[None]*2]])))        # # NOTE () - test not beeing threatened by a ...
+        # NOTE (5) - test beeing threatened by a white knight
+        runs.append((
+            True,
+            TestCheckThreatInput(
+                pos=(3, 1),
+                enemy_color='w',
+                bottomup_orientation=lambda: False,
+                board_matrix=[
+                    [None]*8,
+                    [None]*8,
+                    [None]*8,
+                    [None, 'bp2', *[None]*6],
+                    [None]*8,
+                    ['wn2', *[None]*7],
+                    [None]*8,
+                    [None]*8])))
+        # NOTE (6) - test beeing threatened by a white queen
+        runs.append((
+            True,
+            TestCheckThreatInput(
+                pos=(3, 1),
+                enemy_color='w',
+                bottomup_orientation=lambda: False,
+                board_matrix=[
+                    [None]*8,
+                    [None]*8,
+                    [None]*8,
+                    [None, 'bp2', *[None]*6],
+                    [None]*8,
+                    [None]*8,
+                    [None, 'wq', *[None]*6],
+                    [None]*8])))
+        # NOTE (7) - test beeing threatened by a white king
+        runs.append((
+            True,
+            TestCheckThreatInput(
+                pos=(3, 1),
+                enemy_color='w',
+                bottomup_orientation=lambda: False,
+                board_matrix=[
+                    [None]*8,
+                    [None]*8,
+                    [None]*8,
+                    ['wk4', 'bp2', *[None]*6],
+                    [None]*8,
+                    [None]*8,
+                    [None]*8,
+                    [None]*8])))
+        # --- !SECTION - CONFIGURATION
+        # --- SECTION - TEST
+        for i, (expected, input_config) in enumerate(runs):
+            with self.subTest(i=i), \
+                    mock.patch(
+                        'logic.referee.add_tuples',
+                        spec=logic.referee.add_tuples) as add_tuples, \
+                    mock.patch.multiple(
+                        self.referee,
+                        spec=True,
+                        # SECTION - patch referee methods
+                        bottomup_orientation=input_config.bottomup_orientation,
+                        check_enemy_presence=self._check_enemy_presence,
+                        check_void=self._check_void):
+                # --- !SECTION
+                self.referee.board_matrix = input_config.board_matrix
+                add_tuples.side_effect = self._add_tuples
+                # --- SECTION - beeing tested
+                result = self.referee.check_threat(
+                    pos=input_config.pos,
+                    enemy_color=input_config.enemy_color)
+                # --- !SECTION - beeing tested
+                self.assertEqual(expected, result)
+        # --- !SECTION - TEST
+        return None
+
 
 def suites() -> Dict[ts.TestSuites, List[unittest.TestCase]]:
     return {
         ts.TestSuites.GAME_LOGIC: [TestReferee('test_turn')],
-        ts.TestSuites.GAME_TIES: [TestReferee('test_material_insufficiency')]
+        ts.TestSuites.GAME_TIES: [TestReferee('test_material_insufficiency')],
+        ts.TestSuites.SMOKE_TESTING: [TestReferee('test_check_threat')]
     }
