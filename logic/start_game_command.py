@@ -9,6 +9,7 @@ from logic.generic_command import GenericCommand
 
 class StartGameCommand(GenericCommand):
     def __init__(self, game_options_screen) -> None:
+        """abc"""
         self._screen = game_options_screen
         return None
 
