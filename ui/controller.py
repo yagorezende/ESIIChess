@@ -1,15 +1,19 @@
 import json
 import os
 from typing import Dict, List
+
+import pygame
+from logic.const import TILE_SIZE, Status
+from logic.rcp_command import RetrieveChosenPiece
 from logic.const import BOARD_MATRIX_1, BOARD_MATRIX_2, SAVE_FOLDER, TILE_SIZE, Status
 from logic.referee import Referee
 from logic.bot import Bot
 from logic.tools import count_material_advantage, letter_to_color, show_board_matrix
+from logic.tools import show_board_matrix
 
 from ui.board import BoardTile, ChessPiece
 from ui.screens.navigator import Navigator
 from ui.screens.piece_selection import PieceSelection
-from logic.rcp_command import RetrieveChosenPiece
 
 class Controller:
 
@@ -32,7 +36,6 @@ class Controller:
         self._PP_COUNTER_VALUE = 1
         self._pp_counter_until_piece_selection = self._PP_COUNTER_VALUE
         self._pp_look_promotion = False
-        self.selected_options = None
 
     def init_board(self):
         # add tiles
@@ -165,7 +168,7 @@ class Controller:
             x, y = self.pieces[f"{self.referee.turn_color}k5"].get_board_pos()
             self.grid[y * 8 + x].turn_red()
         return None
-    
+
     def on_loop(self) -> None:
         if self.referee.check_termination():
             return None
@@ -226,7 +229,7 @@ class Controller:
         elif self._pp_counter_until_piece_selection > 0:
             self._pp_counter_until_piece_selection -= 1
         return
-    
+
     def promote_pawn(self, pawn_k: str, new_type: str) -> None:
         """
         Promote the pawn specified by pawn_k to the specified type.
@@ -247,7 +250,7 @@ class Controller:
         scr.command_on_leave = RetrieveChosenPiece(pawn_k, scr, self)
         Navigator().show(scr)
         return
-    
+
     def is_bot_turn(self):
         return not self.multiplayer and self.referee.turn_color == self.bot.color
 
@@ -311,7 +314,7 @@ class Controller:
         self.bot.board_matrix = self.board_matrix
         self.bot.set_state(state['bot'])
         return None
-    
+
     def save_game(self, filename: str = 'save') -> None:
         with open(SAVE_FOLDER + filename + '.json', 'w') as file:
             json.dump(self.get_state(), file, indent=4)
