@@ -1,5 +1,4 @@
 import pygame
-from pygame.locals import *
 
 from ui.screens.game_menu import GameMenu
 from ui.screens.navigator import Navigator
@@ -25,7 +24,7 @@ class App:
         self.fps_clock = pygame.time.Clock()
 
         # init gameobjects
-        self.navigator.show(GameMenu())
+        self.navigator.show(GameMenu(self._display_surf))
 
         return True
 

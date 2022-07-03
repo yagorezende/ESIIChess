@@ -6,11 +6,11 @@ from ui.screens.navigator import Navigator
 
 
 class GameMenu(GenericScreen):
-    def __init__(self) -> None:
+    def __init__(self, surface: pygame.Surface) -> None:
         super().__init__()
         self.default_font = ft.SysFont("", 20)
-
-    # ----------
+        self.background_sprite = pygame.image.load("assets/images/menu-bg.jpg").convert()
+        self.background_sprite = pygame.transform.scale(self.background_sprite, size=surface.get_size())
 
     def on_enter(self) -> None:
         return super().on_enter()
@@ -25,6 +25,11 @@ class GameMenu(GenericScreen):
         return super().on_loop()
 
     def on_render(self, scr_surf: pygame.Surface) -> None:
+        # background
+        rect = self.background_sprite.get_rect()
+        rect.center = scr_surf.get_width() // 2, scr_surf.get_height() // 2
+        scr_surf.blit(self.background_sprite, rect)
+
         title_surf, title_rect = self.default_font.render(
             "ESIIChess",
             fgcolor=(255, 255, 255),
@@ -34,7 +39,7 @@ class GameMenu(GenericScreen):
             fgcolor=(255, 255, 255),
             size=scr_surf.get_height()/32)
         # ----------
-        scr_surf.fill((0, 0, 0))
+        # scr_surf.fill((0, 0, 0))
         scr_surf.blit(
             title_surf, (
                 (scr_surf.get_width()-title_rect.width)*0.5,
