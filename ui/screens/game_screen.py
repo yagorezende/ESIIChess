@@ -1,21 +1,18 @@
+import logic.selected_options as sp
 import pygame
-from logic.selected_options import SelectedOptions
 from ui.controller import Controller
 from ui.screens.generic_screen import GenericScreen
 
 
 class GameScreen(GenericScreen):
-    def __init__(self) -> None:
+    def __init__(self, oponent:sp.Oponent, p1_color:sp.Color, difficulty:sp.Difficulty) -> None:
         super().__init__()
-        # NOTE - injected when instantiating
-        self.selected_options: SelectedOptions = SelectedOptions('','','')
         self.controller = Controller()
         return None
 
     # ----------
 
     def on_enter(self) -> None:
-        self.controller.selected_options = self.selected_options  # type: ignore
         self.controller.init_board()
         return None
 

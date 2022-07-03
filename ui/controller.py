@@ -1,13 +1,14 @@
 from typing import Dict, List
+
+import pygame
 from logic.const import TILE_SIZE, Status
+from logic.rcp_command import RetrieveChosenPiece
 from logic.referee import Referee
 from logic.tools import show_board_matrix
-import pygame
 
 from ui.board import BoardTile, ChessPiece
 from ui.screens.navigator import Navigator
 from ui.screens.piece_selection import PieceSelection
-from logic.rcp_command import RetrieveChosenPiece
 
 
 class Controller:
@@ -32,7 +33,6 @@ class Controller:
         self._PP_COUNTER_VALUE = 1
         self._pp_counter_until_piece_selection = self._PP_COUNTER_VALUE
         self._pp_look_promotion = False
-        self.selected_options = None
 
     def init_board(self):
         # add tiles

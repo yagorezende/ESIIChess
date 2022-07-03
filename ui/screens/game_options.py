@@ -1,5 +1,6 @@
-from typing import List, Tuple
+from typing import Tuple
 
+import logic.selected_options as sp
 import pygame
 import ui.screens.generic_screen as gs
 from logic.start_game_command import StartGameCommand
@@ -14,17 +15,17 @@ class GameOptions(gs.GenericScreen):
         self.oponent = RadialSelection(
             0, 0,
             title='Play against:',
-            options=('Human', 'AI'),
+            options=[names.name.capitalize() for names in sp.Oponent],
             default=0)
         self.color = RadialSelection(
             0, 0,
             title='Choose your color',
-            options=('White', 'Black', 'Random'),
+            options=[names.name.capitalize() for names in sp.Color],
             default=0)
         self.difficulty = RadialSelection(
             0, 0,
             title='Choose the game difficulty',
-            options=('Easy', 'Normal', 'Hard'),
+            options=[names.name.capitalize() for names in sp.Difficulty],
             default=0)
         self.difficulty.active = not self.oponent.selected_option[0] == 0
         self.button_continue = TextButton(
@@ -41,8 +42,6 @@ class GameOptions(gs.GenericScreen):
         return None
 
     def on_event(self, event) -> None:
-        # for w in self._widgets:
-        #     w.on_event(event)
         self.oponent.on_event(event)
         self.color.on_event(event)
         self.difficulty.active = not self.oponent.selected_option[0] == 0
