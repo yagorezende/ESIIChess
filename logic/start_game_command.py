@@ -8,10 +8,9 @@ from logic.generic_command import GenericCommand
 
 
 class StartGameCommand(GenericCommand):
-    def __init__(self, game_options_screen) -> None:
+    def __init__(self, game_options_screen):
         """abc"""
         self._screen = game_options_screen
-        return None
 
     def execute(self) -> None:
         """
@@ -28,6 +27,7 @@ class StartGameCommand(GenericCommand):
         difficulty_enum_member = self._find_enum_member(
             difficulty, sp.Difficulty)
         Navigator().show(GameScreen(
+            Navigator().get_surface(),
             oponent=oponent_enum_member,  # type: ignore
             p1_color=color_enum_member,  # type: ignore
             difficulty=difficulty_enum_member))  # type: ignore

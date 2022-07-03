@@ -93,6 +93,10 @@ class Controller:
         print('-' * 50)
         print(f"Click on {(r, c)}")
 
+        # Evitando erro, caso o click seja fora do board
+        if pos[0] > TILE_SIZE*8 or pos[1] > TILE_SIZE*8:
+            return
+
         target = self.board_matrix[r][c]
         if target:  # click on piece
             if target[0] == self.referee.turn_color:  # if it's a player's piece
@@ -183,12 +187,12 @@ class Controller:
             self.turn()
         return None
 
-    def on_render(self, surface) -> None:
+    def on_render(self) -> None:
         for tile in self.grid:
-            surface.blit(*tile.render())
+            Navigator().get_surface().blit(*tile.render())
         for piece in self.pieces.values():
             if piece.active:
-                surface.blit(*piece.render())
+                Navigator().get_surface().blit(*piece.render())
         return
 
     def handle_highlight_hint(self, target: str, turnoff: bool = False, pos: tuple = None) -> None:

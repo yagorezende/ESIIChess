@@ -12,7 +12,7 @@ class App:
         self._display_flags = pygame.HWSURFACE | pygame.DOUBLEBUF
         self._is_fullscreen: bool = False
         self._FPS_LIMIT = 60
-        self.size = self.width, self.height = 640, 640
+        self.size = self.width, self.height = 850, 640
         self.navigator = Navigator()
 
     def on_init(self):
@@ -29,6 +29,7 @@ class App:
         return True
 
     def on_event(self, event):
+        pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
         if event.type == pygame.QUIT:
             self._running = False
         if event.type == pygame.KEYUP and event.key == pygame.K_F11:
@@ -73,7 +74,7 @@ class App:
                 self.navigator.on_event(event)
             self.on_loop()
             self.navigator.on_loop()
-            self.navigator.on_render(self._display_surf)
+            self.navigator.on_render()
             self.on_render()
             self.fps_clock.tick(self._FPS_LIMIT)
         self.on_cleanup()

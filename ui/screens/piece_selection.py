@@ -56,12 +56,12 @@ class PieceSelection(GenericScreen):
     def on_loop(self) -> None:
         return None
 
-    def on_render(self, scr_surf: pygame.Surface) -> None:
-        self._change_base_pos(scr_surf.get_size())
-        scr_surf.blit(*self._bg)
+    def on_render(self) -> None:
+        self._change_base_pos(self.surface.get_size())
+        self.surface.blit(*self._bg)
         for (c, _), (i, r) in self._pieces_image.items():
             if c == self.show_color:
-                scr_surf.blit(i, r)
+                self.surface.blit(i, r)
         return None
 
     def on_leave(self) -> None:
