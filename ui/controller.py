@@ -4,6 +4,7 @@ from typing import Dict, List
 
 import pygame
 from logic.const import TILE_SIZE, Status
+from logic.game_overall_context import GameOverallContext
 from logic.rcp_command import RetrieveChosenPiece
 from logic.const import BOARD_MATRIX_1, BOARD_MATRIX_2, SAVE_FOLDER, TILE_SIZE, Status
 from logic.referee import Referee
@@ -29,7 +30,7 @@ class Controller:
             pieces=self.pieces,
             color='b',
             bottomup_orientation=False)
-        self.multiplayer = False
+        self.multiplayer = GameOverallContext().is_multiplayer()
         self.selected = None
         self.offset = 0
         self.highlight = []

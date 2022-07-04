@@ -1,8 +1,6 @@
 import pygame
-import logic.selected_options as sp
 
-from ui.screens.game_screen import GameScreen
-from ui.screens.navigator import Navigator
+from logic.start_game_command import StartGameCommand
 from ui.widgets.button_widget import Button
 from ui.widgets.generic_widget import GenericWidget
 
@@ -18,22 +16,14 @@ class SettingsNavigator(GenericWidget):
         self.centerX = self.surface.get_width() - self.get_width() / 2
 
         start_btn = pygame.image.load("assets/images/NavigatorStartMatch.png")
+        start_btn_hover = pygame.image.load("assets/images/NavigatorStartMatch_hover.png")
 
         self.start_match_btn = Button(start_btn,
                                       (self.centerX - start_btn.get_width() / 2,
                                        self.surface.get_height() - start_btn.get_height() - 90),
-                                      alpha=True, action=self.transition_to_game)
+                                      alpha=True, action=StartGameCommand(), hover_sprite=start_btn_hover)
 
         self.widgets = [self.start_match_btn]
-
-    def transition_to_game(self):
-        opponent_enum_member = "IA"
-        color_enum_member = "w"
-        Navigator().show(GameScreen(
-            Navigator().get_surface(),
-            oponent=opponent_enum_member,  # type: ignore
-            p1_color=color_enum_member,  # type: ignore
-            difficulty=sp.Difficulty.EASY))
 
     def get_width(self):
         return self.surface.get_width() * SPACE_PERCENT

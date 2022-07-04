@@ -41,14 +41,14 @@ class GameOptions(gs.GenericScreen):
             options=[names.name.capitalize() for names in sp.Difficulty],
             default=0)
         self.difficulty.active = not self.oponent.selected_option[0] == 0
-        self.button_continue = TextButton(
-            0, 0,
-            text='Play',
-            bg_color_normal=(30, 127, 30),
-            bg_color_hover=(30, 117, 30),
-            bg_color_click=(30, 107, 30),
-            trbl_padding=(5, 20, 5, 20),
-            click_command=StartGameCommand(game_options_screen=self))
+        # self.button_continue = TextButton(
+        #     0, 0,
+        #     text='Play',
+        #     bg_color_normal=(30, 127, 30),
+        #     bg_color_hover=(30, 117, 30),
+        #     bg_color_click=(30, 107, 30),
+        #     trbl_padding=(5, 20, 5, 20),
+        #     click_command=StartGameCommand(game_options_screen=self))
 
     def on_enter(self) -> None:
         return None
@@ -62,7 +62,7 @@ class GameOptions(gs.GenericScreen):
         self.difficulty.active = not self.oponent.selected_option[0] == 0
         if self.difficulty.active:
             self.difficulty.on_event(event)
-        self.button_continue.on_event(event)
+        # self.button_continue.on_event(event)
         return None
 
     def on_loop(self) -> None:
@@ -72,8 +72,6 @@ class GameOptions(gs.GenericScreen):
         self.draw_background()
         # NOTE - update widgets position if they aren't correct
         self._update_widgets_position(self.surface.get_size())
-        # NOTE - clear the screen surface
-        # self.surface.fill((0, 0, 0))
         self.navigator.on_render()
         self.container.on_render()
         return None
@@ -92,11 +90,6 @@ class GameOptions(gs.GenericScreen):
             # -----   -----
             self.difficulty.rect.topleft = self.color.rect.bottomleft
             self.difficulty.rect.top += self._WIDGETS_PADDING
-            # -----   -----
-            width_diff = self.screen_size[0] - self.button_continue.rect.width
-            self.button_continue.rect.left = int(0.5 * width_diff)
-            height_diff = self.screen_size[1] - self.button_continue.rect.height
-            self.button_continue.rect.top = int(0.9 * height_diff)
         return None
 
     def on_leave(self) -> None:

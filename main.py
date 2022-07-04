@@ -1,5 +1,6 @@
 import pygame
 
+from logic.game_overall_context import GameOverallContext
 from ui.screens.game_menu import GameMenu
 from ui.screens.navigator import Navigator
 
@@ -14,6 +15,7 @@ class App:
         self._FPS_LIMIT = 60
         self.size = self.width, self.height = 850, 640
         self.navigator = Navigator()
+        self.context = GameOverallContext() # essa linha faz nada, é só pra inicializar o Singleton
 
     def on_init(self):
         pygame.init()

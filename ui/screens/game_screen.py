@@ -5,8 +5,7 @@ from ui.screens.generic_screen import GenericScreen
 
 
 class GameScreen(GenericScreen):
-    def __init__(self, surface: pygame.Surface, oponent: sp.Oponent, p1_color: sp.Color,
-                 difficulty: sp.Difficulty) -> None:
+    def __init__(self, surface: pygame.Surface) -> None:
         super().__init__(surface)
         self.controller = Controller()
 

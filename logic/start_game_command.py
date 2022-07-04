@@ -1,36 +1,22 @@
 import enum
 
+from logic.generic_command import GenericCommand
 from ui.screens.game_screen import GameScreen
 from ui.screens.navigator import Navigator
 
-import logic.selected_options as sp
-from logic.generic_command import GenericCommand
-
 
 class StartGameCommand(GenericCommand):
-    def __init__(self, game_options_screen):
+    def __init__(self):
         """abc"""
-        self._screen = game_options_screen
 
     def execute(self) -> None:
         """
         Initiate a new game injecting all the selected options on it.
         """
         Navigator().close_actual_screen()
-        _, color = self._screen.color.selected_option
-        _, oponent = self._screen.oponent.selected_option
-        _, difficulty = self._screen.difficulty.selected_option
-        oponent_enum_member = self._find_enum_member(
-            oponent, sp.Oponent)
-        color_enum_member = self._find_enum_member(
-            color, sp.Color)
-        difficulty_enum_member = self._find_enum_member(
-            difficulty, sp.Difficulty)
+        Navigator().get_surface().fill((29, 30, 42))
         Navigator().show(GameScreen(
-            Navigator().get_surface(),
-            oponent=oponent_enum_member,  # type: ignore
-            p1_color=color_enum_member,  # type: ignore
-            difficulty=difficulty_enum_member))  # type: ignore
+            Navigator().get_surface()))
         return None
 
     def _find_enum_member(self, name: str, enumeration: enum.Enum) -> enum.Enum:
