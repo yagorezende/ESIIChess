@@ -252,7 +252,7 @@ class Controller:
         return
 
     def open_piece_selection_screen(self, pawn_k: str) -> None:
-        scr = PieceSelection()
+        scr = PieceSelection(Navigator().get_surface())
         scr.show_color = pawn_k[0]
         scr.command_on_leave = RetrieveChosenPiece(pawn_k, scr, self)
         Navigator().show(scr)

@@ -9,7 +9,7 @@ from ui.widgets.generic_widget import GenericWidget
 class Button(GenericWidget):
     def __init__(self, sprite: pygame.Surface, axis: tuple, alpha=False, action=None,
                  hover_sprite: pygame.Surface = None, selectable=False, selected_sprite: pygame.Surface = None,
-                 checkable=False, group=None):
+                 checkable=False, group=None, trigger=False, drop=True):
         super(Button, self).__init__()
         self.axis = axis
         self.rect = sprite.get_rect()
@@ -22,6 +22,8 @@ class Button(GenericWidget):
         self.checkable = checkable
         self.selectable = selectable
         self.group = group
+        self.trigger = trigger
+        self.drop = drop
 
         if alpha:
             self.sprite = sprite.convert_alpha()
@@ -46,6 +48,8 @@ class Button(GenericWidget):
                                         btn.selected = False
                                         btn.surface = btn.sprite
                         else:
+                            if not self.drop:
+                                return
                             if self.group:
                                 for btn in self.group:
                                     if btn != self:
@@ -58,11 +62,13 @@ class Button(GenericWidget):
                     else:
                         self.selected = True
                 if self.action:
-                    if (self.selectable and self.selected) or not self.selectable:
+                    if self.trigger:
+                        self.action.execute()
+                    elif (self.selectable and self.selected) or not self.selectable:
                         self.action.execute()
         else:
-            if event.type == pygame.MOUSEBUTTONUP and not self.checkable:
-                self.selected = False
+            # if event.type == pygame.MOUSEBUTTONUP and not self.checkable:
+            #     self.selected = False
             if not self.selected:
                 self.surface = self.sprite
 

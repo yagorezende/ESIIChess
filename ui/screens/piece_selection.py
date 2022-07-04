@@ -7,7 +7,8 @@ from ui.screens.navigator import Navigator
 
 
 class PieceSelection(GenericScreen):
-    def __init__(self) -> None:
+    def __init__(self, surface: pygame.Surface) -> None:
+        super().__init__(surface)
         self.command_on_leave: GenericCommand = GenericCommand()
         self.command_on_enter: GenericCommand = GenericCommand()
         self.show_color = ''
@@ -57,7 +58,7 @@ class PieceSelection(GenericScreen):
         return None
 
     def on_render(self) -> None:
-        self._change_base_pos(self.surface.get_size())
+        self._change_base_pos(Navigator().get_surface().get_size())
         self.surface.blit(*self._bg)
         for (c, _), (i, r) in self._pieces_image.items():
             if c == self.show_color:

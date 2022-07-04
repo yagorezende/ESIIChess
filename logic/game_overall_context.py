@@ -8,7 +8,7 @@ class GameOverallContext(metaclass=SingletonMeta):
     def __init__(self):
         self._against = "IA"
         self._color = "w"
-        self._sound = False
+        self._sound = True
 
     def set_color(self, color: str):
         self._color = color
@@ -19,8 +19,14 @@ class GameOverallContext(metaclass=SingletonMeta):
     def get_against(self):
         return self._against
 
+    def should_play(self):
+        return self._sound
+
     def is_multiplayer(self):
         return self._against != "IA"
 
     def set_opponent(self, opponent: str):
         self._against = opponent
+
+    def set_sound_option(self, selected):
+        self._sound = selected

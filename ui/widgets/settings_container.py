@@ -1,5 +1,3 @@
-import random
-
 import pygame
 
 from logic.game_overall_context import GameOverallContext, IA, MULTIPLAYER
@@ -25,16 +23,29 @@ class SettingsContainer(GenericWidget):
 
         padding = (self.surface.get_width() - (self.surface.get_width() * .3 + white_card_sprite.get_width() * 3)) / 4
         top_padding = self.surface.get_height() / 2 - white_card_sprite.get_height() / 2
+        self.card_group = []
         self.white_card_button = Button(white_card_sprite, (padding, top_padding),
-                                        action=SelectColorCommand("w"),
-                                        alpha=True, hover_sprite=white_card_sprite_hover, selectable=True)
+                                        action=SelectColorCommand("w"), drop=False, group=self.card_group,
+                                        selected_sprite=white_card_sprite_hover,
+                                        alpha=True, hover_sprite=white_card_sprite_hover, selectable=True,
+                                        checkable=True)
         self.black_card_button = Button(black_card_sprite, (2 * padding + white_card_sprite.get_width(), top_padding),
-                                        action=SelectColorCommand("b"),
-                                        alpha=True, hover_sprite=black_card_sprite_hover, selectable=True)
+                                        selected_sprite=black_card_sprite_hover,
+                                        action=SelectColorCommand("b"), drop=False, group=self.card_group,
+                                        alpha=True, hover_sprite=black_card_sprite_hover, selectable=True,
+                                        checkable=True)
         self.random_card_button = Button(random_card_sprite,
                                          (3 * padding + 2 * white_card_sprite.get_width(), top_padding),
-                                         action=SelectColorCommand("random"),
+                                         selected_sprite=random_card_sprite_hover,
+                                         action=SelectColorCommand("random"), drop=False, checkable=True,
+                                         group=self.card_group,
                                          alpha=True, hover_sprite=random_card_sprite_hover, selectable=True)
+        self.card_group.append(self.white_card_button)
+        self.card_group.append(self.black_card_button)
+        self.card_group.append(self.random_card_button)
+
+        self.white_card_button.selected = True
+        self.white_card_button.surface = self.white_card_button.hover_sprite
         # Labels
         self.white_card_button_label = pygame.image.load("assets/images/WhitesLabel.png")
         self.blacks_card_button_label = pygame.image.load("assets/images/BlacksLabel.png")
