@@ -16,6 +16,16 @@ class GameOverallContext(metaclass=SingletonMeta):
     def get_color(self):
         return self._color
 
+    def get_opponent_color(self):
+        return {"b": "w", "w": "b"}[self._color]
+
+    def is_white_bottom(self):
+        """
+        Get the board orientation
+        :return: bool: if white is bottom oriented
+        """
+        return self._color == 'w'
+
     def get_against(self):
         return self._against
 

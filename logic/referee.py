@@ -1,25 +1,28 @@
 from typing import Dict, List
 from logic.const import DELTAS, NO_PROGRESSION_LIMIT, REPETITIONS_FOR_DRAW, INITIAL_STATE_1, INITIAL_STATE_2, Status
+from logic.game_overall_context import GameOverallContext
 from logic.tools import add_tuples, letter_to_color, str_to_status
 from ui.board import ChessPiece
+
 
 class Referee():
 
     def __init__(self, board_matrix: list, pieces: dict, bottom_color: str = 'w') -> None:
         self.board_matrix: List[List[str]] = board_matrix
         self.pieces: Dict[str, ChessPiece] = pieces
-        self.rushed_pawn:tuple = None
+        self.rushed_pawn: tuple = None
         self.turn_counter = 1
         self.turn_color = 'w'
-        self.bottom_color = bottom_color
+        self.bottom_color = GameOverallContext().get_color()
         self.no_progression_counter = 0
         self.pieces_counter = 32
         self.status = Status.NORMAL
+        self.kings_place = {'b': 4, 'w': 5}[GameOverallContext().get_color()]
         if bottom_color == 'w':
-            self.states_counter: Dict[str, int] = {INITIAL_STATE_1 : 1}
+            self.states_counter: Dict[str, int] = {INITIAL_STATE_1: 1}
         else:
-            self.states_counter: Dict[str, int] = {INITIAL_STATE_2 : 1}
-    
+            self.states_counter: Dict[str, int] = {INITIAL_STATE_2: 1}
+
     def board_shot(self) -> List[List[str]]:
         """
         Returns a copy of the board matrix.
@@ -31,15 +34,15 @@ class Referee():
         Returns the state of the referee object.
         """
         return {
-            'bottom_color' : self.bottom_color,
-            'no_progression_counter' : self.no_progression_counter,
-            'pieces_counter' : self.pieces_counter,
-            'rushed_pawn' : self.rushed_pawn,
-            'states_counter' : self.states_counter,
-            'status' : self.status.name,
-            'turn_color' : self.turn_color,
-            'turn_counter' : self.turn_counter
-            }
+            'bottom_color': self.bottom_color,
+            'no_progression_counter': self.no_progression_counter,
+            'pieces_counter': self.pieces_counter,
+            'rushed_pawn': self.rushed_pawn,
+            'states_counter': self.states_counter,
+            'status': self.status.name,
+            'turn_color': self.turn_color,
+            'turn_counter': self.turn_counter
+        }
 
     def set_state(self, state) -> None:
         """
@@ -75,11 +78,11 @@ class Referee():
             hp = self.board_matrix[self.rushed_pawn[0]][self.rushed_pawn[1]]
             if hp is None or hp[0] == self.enemy_color():
                 self.rushed_pawn = None
-        self.turn_color = 'b' if self.turn_color == 'w' else 'w' # change turns
+        self.turn_color = 'b' if self.turn_color == 'w' else 'w'  # change turns
         self.turn_counter += 1
         self.update_status()
 
-    def update_status(self) -> None: # self-explanatory
+    def update_status(self) -> None:  # self-explanatory
         print('status checking: ', end='')
         # check progression
         if self.no_progression_counter == NO_PROGRESSION_LIMIT:
@@ -93,9 +96,9 @@ class Referee():
                 self.status = Status.DRAW_MATERIAL
                 return
         # check king
-        if self.check_threat(self.find(self.turn_color + 'k5')):
+        if self.check_threat(self.find(self.turn_color + f'k{self.kings_place}')):
             if self.check_mobility():
-                print('CHECK - ' + letter_to_color(self.turn_color) + ' king is in check.')
+                print('CHECK - ' + letter_to_color(self.turn_color, ) + ' king is in check.')
                 self.status = Status.CHECK
                 return
             print('CHECKMATE - ' + letter_to_color(self.enemy_color()).upper() + ' WINS!')
@@ -110,8 +113,8 @@ class Referee():
         if self.check_repetition():
             print('REPETITION')
             self.status = Status.DRAW_REPETITION
-            return 
-        # normal status
+            return
+            # normal status
         print('NORMAL - its ' + letter_to_color(self.turn_color) + ' turn.')
         self.status = Status.NORMAL
         return
@@ -121,7 +124,7 @@ class Referee():
         Checks whether the game has ended.
         """
         return not (self.status == Status.NORMAL or self.status == Status.CHECK)
-    
+
     def check_repetition(self) -> bool:
         '''
         Checks whether the current state has already happened a pre-defined number of times.
@@ -137,7 +140,7 @@ class Referee():
             return False
         self.states_counter[key] = self.states_counter.get(key, 0) + 1
         return self.states_counter[key] == REPETITIONS_FOR_DRAW
-        
+
     def check_mobility(self) -> bool:
         '''
         Checks whether there's at least one valid move.
@@ -148,7 +151,7 @@ class Referee():
                     return True
         return False
 
-    def check_material_insufficiency(self) -> bool: # self-explanatory
+    def check_material_insufficiency(self) -> bool:  # self-explanatory
         w_sum = {}
         b_sum = {}
         wbishop_pos = bbishop_pos = None
@@ -173,12 +176,12 @@ class Referee():
         condition = w_count == b_count == {('k', 1)}
         # 1 king vs 1 king and 1 bishop
         condition |= \
-            (w_count == {('k', 1)} and b_count == {('k', 1),('b', 1)}) or \
-            (b_count == {('k', 1)} and w_count == {('k', 1),('b', 1)})
+            (w_count == {('k', 1)} and b_count == {('k', 1), ('b', 1)}) or \
+            (b_count == {('k', 1)} and w_count == {('k', 1), ('b', 1)})
         # 1 king vs 1 king and 1 knight
         condition |= \
-            (w_count == {('k', 1)} and b_count == {('k', 1),('n', 1)}) or \
-            (b_count == {('k', 1)} and w_count == {('k', 1),('n', 1)})
+            (w_count == {('k', 1)} and b_count == {('k', 1), ('n', 1)}) or \
+            (b_count == {('k', 1)} and w_count == {('k', 1), ('n', 1)})
         # 1 king and 1 bishop vs 1 king and 1 bishop (bishops of similar squares)
         if w_count == {('k', 1), ('b', 1)} and b_count == {('k', 1), ('b', 1)}:
             condition = self.get_square_color(wbishop_pos) == self.get_square_color(bbishop_pos)
@@ -200,7 +203,8 @@ class Referee():
         """
         Checks enemy presence in a particular position.
         """
-        return self.check_bounds(pos) and self.board_matrix[pos[0]][pos[1]] and self.board_matrix[pos[0]][pos[1]][0] == self.enemy_color()
+        return self.check_bounds(pos) and self.board_matrix[pos[0]][pos[1]] and self.board_matrix[pos[0]][pos[1]][
+            0] == self.enemy_color()
 
     def check_threat(self, pos: tuple) -> bool:
         """
@@ -272,7 +276,8 @@ class Referee():
         """
         Finds the position of a piece by it's key.
         """
-        r, c = self.pieces[self.turn_color + 'k5'].get_board_pos()
+
+        r, c = self.pieces[self.turn_color + f'k{self.kings_place}'].get_board_pos()
         if self.board_matrix[r][c] == piece:
             return r, c
         for r in range(8):
@@ -285,7 +290,7 @@ class Referee():
         """
         Removes from a list the moves that leave the king in a check position.
         """
-        king_pos = self.find(self.turn_color + 'k5')
+        king_pos = self.find(self.turn_color + f'k{self.kings_place}')
         if not king_pos:
             return moves
         pruned = []
@@ -348,11 +353,11 @@ class Referee():
             space.append(aux)
 
         if self.rushed_pawn:
-            if self.rushed_pawn == (pos[0], pos[1] + 1): # en passant on the right
+            if self.rushed_pawn == (pos[0], pos[1] + 1):  # en passant on the right
                 space.append((pos[0] + factor, self.rushed_pawn[1]))
-            elif self.rushed_pawn == (pos[0], pos[1] - 1): # en passant on the left
+            elif self.rushed_pawn == (pos[0], pos[1] - 1):  # en passant on the left
                 space.append((pos[0] + factor, self.rushed_pawn[1]))
-                
+
         return space
 
     def get_rook_moves(self, pos: tuple) -> List[tuple]:

@@ -22,14 +22,18 @@ class Controller:
     def __init__(self):
         self.grid: List[BoardTile] = []
         self.pieces: Dict[str, ChessPiece] = {}
-        self.board_matrix = [row.copy() for row in BOARD_MATRIX_1]
+        if GameOverallContext().is_white_bottom():
+            self.board_matrix = [row.copy() for row in BOARD_MATRIX_1]
+        else:
+            self.board_matrix = [row.copy() for row in BOARD_MATRIX_2]
+
         self.referee = Referee(self.board_matrix, self.pieces)
         self.bot = Bot(
             level=2,
             referee=self.referee,
             board_matrix=self.board_matrix,
             pieces=self.pieces,
-            color='b',
+            color=GameOverallContext().get_opponent_color(),
             bottomup_orientation=False)
         self.multiplayer = GameOverallContext().is_multiplayer()
         self.selected = None
@@ -170,8 +174,9 @@ class Controller:
         print()
 
     def handle_red_light(self):
+        kings_place = {'b': 4, 'w': 5}[GameOverallContext().get_color()]
         if self.referee.status == Status.CHECK or self.referee.status == Status.CHECKMATE:
-            x, y = self.pieces[f"{self.referee.turn_color}k5"].get_board_pos()
+            x, y = self.pieces[f"{self.referee.turn_color}k{kings_place}"].get_board_pos()
             self.grid[y * 8 + x].turn_red()
         return None
 
@@ -348,7 +353,7 @@ class Controller:
             referee=self.referee,
             board_matrix=self.board_matrix,
             pieces=self.pieces,
-            color='b',
+            color=GameOverallContext().get_opponent_color(),
             bottomup_orientation=False)
         self.clear()
         print('#' * 50 + '\nNew Game')
@@ -356,18 +361,22 @@ class Controller:
 
     def load_pieces(self):
         order = ["r", "n", "b", "q", "k", "b", "n", "r"]
+        player = GameOverallContext().get_color()
+        opponent = GameOverallContext().get_opponent_color()
+        if player == "b":
+            order.reverse()
         for i in range(8):
             # white
-            self.pieces['wp' + str(i + 1)] = ChessPiece(x=i * TILE_SIZE, y=6 * TILE_SIZE, offset=self.offset)
+            self.pieces[player+'p' + str(i + 1)] = ChessPiece(x=i * TILE_SIZE, y=6 * TILE_SIZE, offset=self.offset, color=player)
             try:
-                self.pieces['w' + order[i] + str(i + 1)] = ChessPiece(type=order[i], x=i * TILE_SIZE, y=7 * TILE_SIZE,
-                                                                      offset=self.offset)
+                self.pieces[player + order[i] + str(i + 1)] = ChessPiece(type=order[i], x=i * TILE_SIZE, y=7 * TILE_SIZE,
+                                                                      offset=self.offset, color=player)
             except Exception as e:
                 print(f"Could not import w{order[i]}.png")
             # black
-            self.pieces['bp' + str(i + 1)] = ChessPiece(color='b', x=i * TILE_SIZE, y=1 * TILE_SIZE, offset=self.offset)
+            self.pieces[opponent+'p' + str(i + 1)] = ChessPiece(color=opponent, x=i * TILE_SIZE, y=1 * TILE_SIZE, offset=self.offset)
             try:
-                self.pieces['b' + order[i] + str(i + 1)] = ChessPiece(color='b', type=order[i], x=i * TILE_SIZE,
+                self.pieces[opponent + order[i] + str(i + 1)] = ChessPiece(color=opponent, type=order[i], x=i * TILE_SIZE,
                                                                       y=0 * TILE_SIZE, offset=self.offset)
             except Exception as e:
                 print(f"Could not import b{order[i]}.png")

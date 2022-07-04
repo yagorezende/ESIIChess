@@ -3,11 +3,14 @@ from typing import List
 from logic.const import Status
 
 # Visual
+from logic.game_overall_context import GameOverallContext
+
 
 def show_dic(dic: dict):
     for key, value in dic.items():
         print(key, value)
     return None
+
 
 def show_board_matrix(matrix: List[List[str]]):
     for row in matrix:
@@ -18,6 +21,7 @@ def show_board_matrix(matrix: List[List[str]]):
                 print(f'''{'-' : ^5}''', end='')
         print()
     return
+
 
 def board_to_str(matrix: List[List[str]]):
     matrix_str = ""
@@ -30,15 +34,27 @@ def board_to_str(matrix: List[List[str]]):
         matrix_str += '\n'
     return matrix_str
 
+
 def letter_to_color(l: str):
-    if l == 'b': return 'black'
-    if l == 'w': return 'white'
-    return None
+    if l == 'b':
+        return 'black'
+    else:
+        return 'white'
+    # if l == 'b' and GameOverallContext().is_white_bottom():
+    #     return 'black'
+    # elif l == 'w' and GameOverallContext().is_white_bottom():
+    #     return 'white'
+    # elif l == 'b':
+    #     return 'white'
+    # else:
+    #     return 'black'
+
 
 # Math
 
 def add_tuples(a: int, b: int) -> tuple:
-	return a[0] + b[0], a[1] + b[1]
+    return a[0] + b[0], a[1] + b[1]
+
 
 def count_material_advantage(board_matrix: List[List[str]], color: str) -> int:
     advantage = 0
@@ -46,15 +62,16 @@ def count_material_advantage(board_matrix: List[List[str]], color: str) -> int:
         for code in row:
             if code and code[1] != 'k':
                 factor = 1 if code[0] == color else -1
-                if code[1] == 'p': # 1 for pawns
+                if code[1] == 'p':  # 1 for pawns
                     advantage += factor
-                elif code[1] == 'r': # 5 for rooks
+                elif code[1] == 'r':  # 5 for rooks
                     advantage += factor * 5
-                elif code[1] == 'q': # 9 for queens
+                elif code[1] == 'q':  # 9 for queens
                     advantage += factor * 9
-                else: # 3 for knights and bishops
+                else:  # 3 for knights and bishops
                     advantage += factor * 3
     return advantage
+
 
 # Others
 

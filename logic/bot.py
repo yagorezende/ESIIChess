@@ -1,8 +1,10 @@
 from typing import Dict, List, Tuple
 from logic.const import INFINITE
+from logic.game_overall_context import GameOverallContext
 from logic.referee import Referee
 from ui.board import ChessPiece
 from random import choice
+
 
 class Node():
 
@@ -10,13 +12,14 @@ class Node():
         self.board_matrix = referee_info['board']
         self.bottom_color = referee_info['bottom_color']
         self.pieces_counter = referee_info['pieces_counter']
+        self.kings_place = {'b': 4, 'w': 5}[GameOverallContext().get_color()]
         self.castle_info = {
-            "wk5" : referee_info['castle_info']['wk5'],
-            "bk5" : referee_info['castle_info']['bk5'],
-            "wr1" : referee_info['castle_info']['wr1'],
-            "wr8" : referee_info['castle_info']['wr8'],
-            "br1" : referee_info['castle_info']['br1'],
-            "br8" : referee_info['castle_info']['br8']
+            f"wk{self.kings_place}": referee_info['castle_info'][f'wk{self.kings_place}'],
+            f"bk{self.kings_place}": referee_info['castle_info'][f'bk{self.kings_place}'],
+            "wr1": referee_info['castle_info']['wr1'],
+            "wr8": referee_info['castle_info']['wr8'],
+            "br1": referee_info['castle_info']['br1'],
+            "br8": referee_info['castle_info']['br8']
         }
         self.rushed_pawn = referee_info['rushed_pawn']
         self.turn_color = referee_info['turn_color']
@@ -29,7 +32,7 @@ class Node():
         i, j = move
         code = self.board_matrix[r][c]
         if code[1] == 'k':
-            self.castle_info[code[0] + 'k5'] = True
+            self.castle_info[code[0] + f'k{self.kings_place}'] = True
             displacement = c - j
             if displacement == 2:  # small castle
                 self.board_matrix[r][c - 1] = self.board_matrix[r][c + 1]
@@ -42,24 +45,24 @@ class Node():
         elif code[1] == 'r':
             self.castle_info[code] = True
         elif code[1] == 'p':
-            if abs(r - i) == 2: # double step
+            if abs(r - i) == 2:  # double step
                 self.rushed_pawn = move
             else:
                 self.rushed_pawn = None
                 if c != j and not self.board_matrix[r][c]:  # en passant
                     self.board_matrix[i][c] = None
-        self.board_matrix[i][j] = self.board_matrix[r][c] # transform
-        self.board_matrix[r][c] = None # same
+        self.board_matrix[i][j] = self.board_matrix[r][c]  # transform
+        self.board_matrix[r][c] = None  # same
         return
 
     def get_info(self):
         return {
-            'board' : [row.copy() for row in self.board_matrix],
-            'bottom_color' : self.bottom_color,
-            'pieces_counter' : self.pieces_counter,
-            'castle_info' : self.castle_info,
-            'rushed_pawn' : self.rushed_pawn,
-            'turn_color' : self.turn_color
+            'board': [row.copy() for row in self.board_matrix],
+            'bottom_color': self.bottom_color,
+            'pieces_counter': self.pieces_counter,
+            'castle_info': self.castle_info,
+            'rushed_pawn': self.rushed_pawn,
+            'turn_color': self.turn_color
         }
 
     def copy(self):
@@ -68,9 +71,11 @@ class Node():
             self.evaluation, self.origin
         )
 
+
 class Bot():
 
-    def __init__(self, level: int, referee: Referee, board_matrix: list, pieces: dict, color: str, bottomup_orientation: bool) -> None:
+    def __init__(self, level: int, referee: Referee, board_matrix: list, pieces: dict, color: str,
+                 bottomup_orientation: bool) -> None:
         self.level = level
         self.referee = referee
         self.board_matrix = board_matrix
@@ -115,20 +120,20 @@ class Bot():
                 key = node.board_matrix[r][c]
                 if key:
                     factor = 1 if key[0] == node.turn_color else -1
-                    if key[1] == 'k': # 100 for kings
+                    if key[1] == 'k':  # 100 for kings
                         advantage += factor * 100
-                    elif key[1] == 'p': # 1 for pawns
+                    elif key[1] == 'p':  # 1 for pawns
                         advantage += factor
-                    elif key[1] == 'r': # 5 for rooks
+                    elif key[1] == 'r':  # 5 for rooks
                         advantage += factor * 5
-                    elif key[1] == 'q': # 9 for queens
+                    elif key[1] == 'q':  # 9 for queens
                         advantage += factor * 9
-                    else: # 3 for knights and bishops
+                    else:  # 3 for knights and bishops
                         advantage += factor * 3
         self.set_referee_info(backup)
         self.referee.board_matrix = self.board_matrix
         return advantage
-    
+
     def search(self, max_depth: int = 0) -> Tuple[tuple, tuple]:
         """
         Starts a search for a good move using a tree with a maximum allowed depth.
@@ -175,7 +180,7 @@ class Bot():
             elif node.evaluation == min_adv:
                 min_nodes.append(node)
         return choice(min_nodes)
-    
+
     def dive(self, successors: List[Node], depth: int = 0, max_depth: int = 1):
         """
         Finds the appropriete node according to the current level on the search tree.
@@ -192,13 +197,13 @@ class Bot():
                 best_eval = aux[1]
                 best = [successor]
         return choice(best), best_eval
-    
+
     def minimax(self, node: Node, depth: int = 0, max_depth: int = 1) -> Tuple[Node, int]:
         """
         Minimax algorithm.
         """
         successors = self.generate_successors(node)
-        if not successors: # the node is an endgame.
+        if not successors:  # the node is an endgame.
             backup = self.get_referee_info()
             self.set_referee_info(node.get_info())
             node.evaluation = (-1) ** ((depth % 2) + (max_depth % 2) + 1) * INFINITE
@@ -206,7 +211,7 @@ class Bot():
             self.referee.board_matrix = self.board_matrix
             return node, node.evaluation
         next_level = depth + 1
-        if next_level >= max_depth: # next level is the leaf level, so we just get the minimum nodes from there.
+        if next_level >= max_depth:  # next level is the leaf level, so we just get the minimum nodes from there.
             best = self.get_min_node(successors)
             return best, best.evaluation
         return self.dive(successors, next_level, max_depth)
@@ -215,22 +220,23 @@ class Bot():
         """
         Returns some information about the referee object.
         """
+        kings_place = {'b': 4, 'w': 5}[GameOverallContext().get_color()]
         return {
-            'board' : self.referee.board_shot(),
-            'bottom_color' : self.referee.bottom_color,
-            'pieces_counter' : self.referee.pieces_counter,
-            'castle_info' : {
-                'wk5' : self.referee.pieces['wk5'].has_moved,
-                'bk5' : self.referee.pieces['bk5'].has_moved,
-                'wr1' : self.referee.pieces['wr1'].has_moved,
-                'wr8' : self.referee.pieces['wr8'].has_moved,
-                'br1' : self.referee.pieces['br1'].has_moved,
-                'br8' : self.referee.pieces['br8'].has_moved
+            'board': self.referee.board_shot(),
+            'bottom_color': self.referee.bottom_color,
+            'pieces_counter': self.referee.pieces_counter,
+            'castle_info': {
+                f'wk{kings_place}': self.referee.pieces[f'wk{kings_place}'].has_moved,
+                f'bk{kings_place}': self.referee.pieces[f'bk{kings_place}'].has_moved,
+                'wr1': self.referee.pieces['wr1'].has_moved,
+                'wr8': self.referee.pieces['wr8'].has_moved,
+                'br1': self.referee.pieces['br1'].has_moved,
+                'br8': self.referee.pieces['br8'].has_moved
             },
-            'rushed_pawn' : self.referee.rushed_pawn,
-            'turn_color' : self.referee.turn_color
+            'rushed_pawn': self.referee.rushed_pawn,
+            'turn_color': self.referee.turn_color
         }
-    
+
     def set_referee_info(self, info: dict) -> None:
         """
         Set some information about the referee object.
@@ -239,8 +245,9 @@ class Bot():
         self.referee.bottom_color = info['bottom_color']
         self.referee.turn_color = info['turn_color']
         self.referee.pieces_counter = info['pieces_counter']
-        self.referee.pieces['wk5'].has_moved = info['castle_info']['wk5']
-        self.referee.pieces['bk5'].has_moved = info['castle_info']['bk5']
+        kings_place = {'b': 4, 'w': 5}[GameOverallContext().get_color()]
+        self.referee.pieces[f'wk{kings_place}'].has_moved = info['castle_info'][f'wk{kings_place}']
+        self.referee.pieces[f'bk{kings_place}'].has_moved = info['castle_info'][f'bk{kings_place}']
         self.referee.pieces['wr1'].has_moved = info['castle_info']['wr1']
         self.referee.pieces['wr8'].has_moved = info['castle_info']['wr8']
         self.referee.pieces['br1'].has_moved = info['castle_info']['br1']
@@ -253,11 +260,11 @@ class Bot():
         Returns relevant info about the AI.
         """
         return {
-            'level' : self.level,
-            'color' : self.color,
-            'bottomup_orientation' : self.bottomup_orientation
-            }
-    
+            'level': self.level,
+            'color': self.color,
+            'bottomup_orientation': self.bottomup_orientation
+        }
+
     def set_state(self, state: dict) -> None:
         """
         Sets relevant info about the AI.
