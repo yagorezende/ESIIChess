@@ -2,8 +2,9 @@ import random
 
 import pygame
 
-from logic.game_overall_context import GameOverallContext
+from logic.game_overall_context import GameOverallContext, IA, MULTIPLAYER
 from logic.select_color_command import SelectColorCommand
+from logic.select_opponent_command import SelectOpponentCommand
 from ui.widgets.button_widget import Button
 from ui.widgets.generic_widget import GenericWidget
 
@@ -38,13 +39,46 @@ class SettingsContainer(GenericWidget):
         self.white_card_button_label = pygame.image.load("assets/images/WhitesLabel.png")
         self.blacks_card_button_label = pygame.image.load("assets/images/BlacksLabel.png")
         self.random_card_button_label = pygame.image.load("assets/images/RandomLabel.png")
-
         # [END OF CARDS WIDGET]
 
         # Title
         self.title = pygame.image.load("assets/images/MatchSettingsTitle.png").convert_alpha()
 
-        self.widgets = [self.white_card_button, self.black_card_button, self.random_card_button]
+        # Sound checkbox
+        checkbox_sprite_off = pygame.image.load("assets/images/Checkbox_off.png")
+        checkbox_sprite_on = pygame.image.load("assets/images/Checkbox_on.png").convert_alpha()
+        checkbox_sprite_hover = pygame.image.load("assets/images/Checkbox_hover.png").convert_alpha()
+        self.checkbox_group = []
+        self.IA_checkbox = Button(checkbox_sprite_off,
+                                  (self.surface.get_width() * .15, self.surface.get_height() - 80),
+                                  action=SelectOpponentCommand(IA),
+                                  alpha=True,
+                                  hover_sprite=checkbox_sprite_hover,
+                                  selected_sprite=checkbox_sprite_on,
+                                  selectable=True,
+                                  checkable=True, group=self.checkbox_group)
+
+        self.multiplayer_checkbox = Button(checkbox_sprite_off,
+                                           (self.surface.get_width() * .40, self.surface.get_height() - 80),
+                                           action=SelectOpponentCommand(MULTIPLAYER),
+                                           alpha=True,
+                                           hover_sprite=checkbox_sprite_hover,
+                                           selected_sprite=checkbox_sprite_on,
+                                           selectable=True,
+                                           checkable=True, group=self.checkbox_group)
+
+        self.checkbox_group.append(self.IA_checkbox)
+        self.checkbox_group.append(self.multiplayer_checkbox)
+        # Checkbox Labels
+        self.IA_checkbox_label = pygame.image.load("assets/images/IALabel.png").convert_alpha()
+        self.multiplayer_checkbox_label = pygame.image.load("assets/images/MultiplayerLabel.png").convert_alpha()
+
+        # IA selected as default
+        self.IA_checkbox.selected = True
+        self.IA_checkbox.surface = self.IA_checkbox.selected_sprite
+
+        self.widgets = [self.white_card_button, self.black_card_button, self.random_card_button, self.IA_checkbox,
+                        self.multiplayer_checkbox]
 
     def _mark_selected(self):
         if GameOverallContext().get_color() == "w":
@@ -53,10 +87,9 @@ class SettingsContainer(GenericWidget):
             self.black_card_button.selected = True
 
     def on_render(self):
-        # blit cards buttons
-        self.surface.blit(*self.white_card_button.on_render())
-        self.surface.blit(*self.black_card_button.on_render())
-        self.surface.blit(*self.random_card_button.on_render())
+        # blit widgets
+        for widget in self.widgets:
+            self.surface.blit(*widget.on_render())
 
         # blit cards labels
         rect = self.white_card_button.align_center(self.white_card_button_label)
@@ -71,3 +104,12 @@ class SettingsContainer(GenericWidget):
 
         rect = self.black_card_button.align_center(self.title)
         self.surface.blit(self.title, (rect[0], self.surface.get_height() * .10))
+
+        # blit checkbox labels
+        rect = self.IA_checkbox.align_center(self.IA_checkbox_label)
+        self.surface.blit(self.IA_checkbox_label,
+                          (rect[0] + self.IA_checkbox_label.get_width() / 2 + 28, rect[1]))
+
+        rect = self.multiplayer_checkbox.align_center(self.multiplayer_checkbox_label)
+        self.surface.blit(self.multiplayer_checkbox_label,
+                          (rect[0] + self.multiplayer_checkbox_label.get_width() / 2 + 28, rect[1] + 44))

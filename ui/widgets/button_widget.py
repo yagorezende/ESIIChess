@@ -8,7 +8,8 @@ from ui.widgets.generic_widget import GenericWidget
 
 class Button(GenericWidget):
     def __init__(self, sprite: pygame.Surface, axis: tuple, alpha=False, action=None,
-                 hover_sprite: pygame.Surface = None, selectable=False):
+                 hover_sprite: pygame.Surface = None, selectable=False, selected_sprite: pygame.Surface = None,
+                 checkable=False, group=None):
         super(Button, self).__init__()
         self.axis = axis
         self.rect = sprite.get_rect()
@@ -16,8 +17,11 @@ class Button(GenericWidget):
         self.rect[1] += axis[1]
         self.action: GenericCommand = action
         self.hover_sprite = hover_sprite
+        self.selected_sprite = selected_sprite
         self.selected = False
+        self.checkable = checkable
         self.selectable = selectable
+        self.group = group
 
         if alpha:
             self.sprite = sprite.convert_alpha()
@@ -28,17 +32,36 @@ class Button(GenericWidget):
     def on_event(self, event) -> None:
         super(Button, self).on_event(event)
         if self._is_hover(event):
-            if self.hover_sprite:
+            if self.hover_sprite and not (self.checkable and self.selected):
                 self.surface = self.hover_sprite
             pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
             if event.type == pygame.MOUSEBUTTONUP:
                 if self.selectable:
-                    self.selected = True
-                print("Click no btn")
+                    if self.checkable:
+                        if not self.selected:
+                            self.surface = self.selected_sprite
+                            if self.group:
+                                for btn in self.group:
+                                    if btn != self:
+                                        btn.selected = False
+                                        btn.surface = btn.sprite
+                        else:
+                            if self.group:
+                                for btn in self.group:
+                                    if btn != self:
+                                        btn.selected = True
+                                        btn.surface = btn.selected_sprite
+                                        if btn.action:
+                                            btn.action.execute()
+                                        break
+                        self.selected = not self.selected
+                    else:
+                        self.selected = True
                 if self.action:
-                    self.action.execute()
+                    if (self.selectable and self.selected) or not self.selectable:
+                        self.action.execute()
         else:
-            if event.type == pygame.MOUSEBUTTONUP:
+            if event.type == pygame.MOUSEBUTTONUP and not self.checkable:
                 self.selected = False
             if not self.selected:
                 self.surface = self.sprite

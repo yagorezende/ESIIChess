@@ -16,6 +16,7 @@ from ui.board import BoardTile, ChessPiece
 from ui.screens.navigator import Navigator
 from ui.screens.piece_selection import PieceSelection
 
+
 class Controller:
 
     def __init__(self):
@@ -72,7 +73,7 @@ class Controller:
                 rook.move(((c + 1) * TILE_SIZE, r * TILE_SIZE))
                 rook.has_moved = True
         elif piece.type == 'p':  # update instance
-            if abs(r - piece_pos[0]) == 2: # double step
+            if abs(r - piece_pos[0]) == 2:  # double step
                 self.referee.rushed_pawn = (r, c)
             else:
                 if c != piece_pos[1] and not self.board_matrix[r][c]:  # en passant
@@ -95,7 +96,7 @@ class Controller:
         print(f"Click on {(r, c)}")
 
         # Evitando erro, caso o click seja fora do board
-        if pos[0] > TILE_SIZE*8 or pos[1] > TILE_SIZE*8:
+        if pos[0] > TILE_SIZE * 8 or pos[1] > TILE_SIZE * 8:
             return
 
         target = self.board_matrix[r][c]
@@ -186,6 +187,7 @@ class Controller:
                 self.manage_move(action[1])
             self.handle_highlight_hint(None, turnoff=True)
             self.turn()
+            self.handle_red_light()
         return None
 
     def on_render(self) -> None:
@@ -228,7 +230,7 @@ class Controller:
             if (pawn_k):
                 # NOTE - promote to a new type
                 if self.is_bot_turn():
-                    pass # TODO: implement autopromotion for AI.
+                    pass  # TODO: implement autopromotion for AI.
                 else:
                     self.open_piece_selection_screen(pawn_k)
         elif self._pp_counter_until_piece_selection > 0:
@@ -243,7 +245,7 @@ class Controller:
         piece.type = new_type
         piece.reload_sprite()
         # NOTE - +8 to solve colisions ex. wp1 -> wr1 replacing the existing wr1
-        new_key = f"{pawn_k[0]}{new_type}{int(pawn_k[2:])+8}"
+        new_key = f"{pawn_k[0]}{new_type}{int(pawn_k[2:]) + 8}"
         r, c = piece.get_board_pos()
         self.pieces[new_key] = piece
         self.board_matrix[r][c] = new_key
@@ -281,23 +283,23 @@ class Controller:
         aux = {}
         for key, value in self.pieces.items():
             aux[key] = {
-                'position' : value.get_board_pos(),
-                'has_moved' : value.has_moved,
-                'active' : value.active
+                'position': value.get_board_pos(),
+                'has_moved': value.has_moved,
+                'active': value.active
             }
         return {
-            'board_matrix' : self.board_matrix,
-            'pieces' : aux,
-            'multiplayer' : self.multiplayer,
-            'referee' : self.referee.get_state(),
-            'bot' : self.bot.get_state()
-            }
+            'board_matrix': self.board_matrix,
+            'pieces': aux,
+            'multiplayer': self.multiplayer,
+            'referee': self.referee.get_state(),
+            'bot': self.bot.get_state()
+        }
 
     def set_state(self, state) -> None:
         """
         Loads state.
         """
-        aux:Dict[ChessPiece] = state['pieces']
+        aux: Dict[ChessPiece] = state['pieces']
         removable = list(self.pieces.keys())
         for key in removable:
             if not key in aux.keys():
@@ -349,7 +351,7 @@ class Controller:
             color='b',
             bottomup_orientation=False)
         self.clear()
-        print('#' * 50  + '\nNew Game')
+        print('#' * 50 + '\nNew Game')
         return None
 
     def load_pieces(self):
