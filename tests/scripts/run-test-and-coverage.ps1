@@ -1,0 +1,1 @@
+python -m coverage run $args; python -m coverage lcov
