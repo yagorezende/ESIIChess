@@ -1,7 +1,7 @@
 import sys
 import pygame
-from pygame.locals import *
 
+from logic.game_overall_context import GameOverallContext
 from ui.screens.game_menu import GameMenu
 from ui.screens.navigator import Navigator
 
@@ -11,26 +11,39 @@ class App:
         self._running = True
         self.fps_clock = None
         self._display_surf = None
+        self._display_flags = pygame.HWSURFACE | pygame.DOUBLEBUF
+        self._is_fullscreen: bool = False
         self._FPS_LIMIT = 60
-        self.size = self.width, self.height = 640, 640
+        self.size = self.width, self.height = 850, 640
         self.navigator = Navigator()
+        self.context = GameOverallContext() # essa linha faz nada, é só pra inicializar o Singleton
 
     def on_init(self):
         pygame.init()
         self._display_surf = pygame.display.set_mode(
-            self.size, pygame.HWSURFACE | pygame.DOUBLEBUF
+            self.size, self._display_flags
         )
         self._running = True
         self.fps_clock = pygame.time.Clock()
 
         # init gameobjects
-        self.navigator.show(GameMenu())
+        self.navigator.show(GameMenu(self._display_surf))
 
         return True
 
     def on_event(self, event):
+        pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
         if event.type == pygame.QUIT:
             self._running = False
+        if event.type == pygame.KEYUP and event.key == pygame.K_F11:
+            if self._is_fullscreen:
+                self._display_flags &= ~pygame.FULLSCREEN
+                self._display_flags &= ~pygame.SCALED
+            else:
+                self._display_flags |= pygame.FULLSCREEN
+                self._display_flags |= pygame.SCALED
+            self._display_surf = pygame.display.set_mode(self.size, self._display_flags)
+            self._is_fullscreen = not self._is_fullscreen
 
     def on_loop(self):
         """
@@ -64,7 +77,7 @@ class App:
                 self.navigator.on_event(event)
             self.on_loop()
             self.navigator.on_loop()
-            self.navigator.on_render(self._display_surf)
+            self.navigator.on_render()
             self.on_render()
             self.fps_clock.tick(self._FPS_LIMIT)
         self.on_cleanup()

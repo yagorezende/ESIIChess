@@ -23,3 +23,7 @@ A **terceira apresentação** deve descrever como foram feitos testes de unidade
 * [**Trello**](https://app.clickup.com/31090974/v/li/192911696);
 * [**Apresentação 1**](https://docs.google.com/presentation/d/1XmjNqxGJMln2TGwKV3dvB_hBVk2rhKxaURR8v17dOcg/edit?usp=sharing);
 * [**Apresentação 2**](https://docs.google.com/presentation/d/1r0kgRjSJ2F31BSJEnoXfflYqsWZmGCHcW8Ccvl2GaOQ/edit?usp=sharing);
+
+# Créditos:
+Menu photo by [Jeswin Thomas](https://unsplash.com/@jeswinthomas?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText) on [Unsplash](https://unsplash.com/s/photos/chess?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText)
+  
