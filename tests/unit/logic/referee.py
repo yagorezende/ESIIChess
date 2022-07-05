@@ -578,7 +578,11 @@ class TestReferee(unittest.TestCase):
 
 def suites() -> Dict[ts.TestSuites, List[unittest.TestCase]]:
     return {
-        ts.TestSuites.GAME_LOGIC: [TestReferee('test_turn'), TestReferee('test_get_king_moves')],
-        ts.TestSuites.GAME_TIES: [TestReferee('test_check_material_insufficiency')],
-        ts.TestSuites.SMOKE_TESTING: [TestReferee('test_check_threat')]
+        ts.TestSuites.GAME_LOGIC: [
+            TestReferee('test_check_threat'),
+            TestReferee('test_get_king_moves')],
+        ts.TestSuites.GAME_TIES: [
+            TestReferee('test_check_material_insufficiency')],
+        ts.TestSuites.SMOKE_TESTING: [
+            TestReferee('test_turn')]
     }

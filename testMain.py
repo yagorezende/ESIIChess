@@ -19,7 +19,7 @@ import sys
 import unittest
 from typing import Dict, List, Set
 
-import tests.logic.referee_unit as tlr_unit
+import tests.unit.logic.referee as tlr_unit
 import tests.test_suites as ts
 
 _suites: Dict[ts.TestSuites, Set[unittest.TestCase]] = {}
