@@ -46,6 +46,7 @@ class SettingsContainer(GenericWidget):
 
         self.white_card_button.selected = True
         self.white_card_button.surface = self.white_card_button.hover_sprite
+        GameOverallContext().set_color('w')
         # Labels
         self.white_card_button_label = pygame.image.load("assets/images/WhitesLabel.png")
         self.blacks_card_button_label = pygame.image.load("assets/images/BlacksLabel.png")

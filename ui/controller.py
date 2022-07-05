@@ -42,6 +42,8 @@ class Controller:
         self._PP_COUNTER_VALUE = 1
         self._pp_counter_until_piece_selection = self._PP_COUNTER_VALUE
         self._pp_look_promotion = False
+        self.board_edge = TILE_SIZE * 8
+        self.infos = pygame.image.load("assets/images/Commands.png").convert_alpha()
 
     def init_board(self):
         # add tiles
@@ -141,8 +143,8 @@ class Controller:
             self.load_game()
         elif key == 'i':
             self.show_info()
-        # elif key == 'b':
-        #     self.load_game('previous')
+        elif key == 'q':
+            Navigator().close_actual_screen()
         return None
 
     def manage_move(self, move) -> None:
@@ -173,8 +175,14 @@ class Controller:
         ''')
         print()
 
-    def handle_red_light(self):
+    def handle_red_light(self, clear=False):
         kings_place = {'b': 4, 'w': 5}[GameOverallContext().get_color()]
+        if clear:
+            x, y = self.pieces[f"bk{kings_place}"].get_board_pos()
+            self.grid[y * 8 + x].turn_light(False)
+            x, y = self.pieces[f"wk{kings_place}"].get_board_pos()
+            self.grid[y * 8 + x].turn_light(False)
+
         if self.referee.status == Status.CHECK or self.referee.status == Status.CHECKMATE:
             x, y = self.pieces[f"{self.referee.turn_color}k{kings_place}"].get_board_pos()
             self.grid[y * 8 + x].turn_red()
@@ -206,7 +214,8 @@ class Controller:
             else:
                 Navigator().get_surface().blit(*self.render_dead_piece(piece, dead_offset[piece.color]))
                 dead_offset[piece.color] += 1
-
+        Navigator().get_surface().blit(self.infos,
+                                       (self.board_edge + 12, self.board_edge / 2 - self.infos.get_height() / 2 - 50))
         return
 
     def _process_dead_piece_place(self, sprite: pygame.Surface, index: int):
@@ -310,6 +319,8 @@ class Controller:
         self._PP_COUNTER_VALUE = 1
         self._pp_counter_until_piece_selection = self._PP_COUNTER_VALUE
         self._pp_look_promotion = False
+        self.handle_red_light(clear=True)
+
         return None
 
     def get_state(self) -> dict:
@@ -328,7 +339,8 @@ class Controller:
             'pieces': aux,
             'multiplayer': self.multiplayer,
             'referee': self.referee.get_state(),
-            'bot': self.bot.get_state()
+            'bot': self.bot.get_state(),
+            'color': GameOverallContext().get_color()
         }
 
     def set_state(self, state) -> None:
@@ -336,6 +348,11 @@ class Controller:
         Loads state.
         """
         aux: Dict[ChessPiece] = state['pieces']
+        GameOverallContext().set_color(state['color'])
+        if state['multiplayer']:
+            GameOverallContext().set_opponent_as_multiplayer()
+        else:
+            GameOverallContext().set_opponent_as_IA()
         removable = list(self.pieces.keys())
         for key in removable:
             if not key in aux.keys():
@@ -377,7 +394,10 @@ class Controller:
     def restart(self) -> None:
         self.pieces.clear()
         self.load_pieces()
-        self.board_matrix = [row.copy() for row in BOARD_MATRIX_1]
+        if GameOverallContext().is_white_bottom():
+            self.board_matrix = [row.copy() for row in BOARD_MATRIX_1]
+        else:
+            self.board_matrix = [row.copy() for row in BOARD_MATRIX_2]
         self.referee = Referee(self.board_matrix, self.pieces)
         self.bot = Bot(
             level=self.bot.level,

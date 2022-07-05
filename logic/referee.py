@@ -18,7 +18,7 @@ class Referee():
         self.pieces_counter = 32
         self.status = Status.NORMAL
         self.kings_place = {'b': 4, 'w': 5}[GameOverallContext().get_color()]
-        if bottom_color == 'w':
+        if self.bottom_color == 'w':
             self.states_counter: Dict[str, int] = {INITIAL_STATE_1: 1}
         else:
             self.states_counter: Dict[str, int] = {INITIAL_STATE_2: 1}
@@ -56,6 +56,11 @@ class Referee():
         self.turn_color = state['turn_color']
         self.turn_counter = state['turn_counter']
         self.status = str_to_status(state['status'])
+        self.kings_place = {'b': 4, 'w': 5}[GameOverallContext().get_color()]
+        if self.bottom_color == 'w':
+            self.states_counter: Dict[str, int] = {INITIAL_STATE_1: 1}
+        else:
+            self.states_counter: Dict[str, int] = {INITIAL_STATE_2: 1}
         return
 
     def bottomup_orientation(self) -> bool:

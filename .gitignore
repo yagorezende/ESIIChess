@@ -4,3 +4,4 @@ venv/
 __pycache__/
 **.pyc
 **/__pycache__
+logic\\gamestate\\save.json
