@@ -16,7 +16,7 @@ class App:
         self._FPS_LIMIT = 60
         self.size = self.width, self.height = 850, 640
         self.navigator = Navigator()
-        self.context = GameOverallContext() # essa linha faz nada, é só pra inicializar o Singleton
+        GameOverallContext().set_color('w')  # essa linha faz nada, é só pra inicializar o Singleton
 
     def on_init(self):
         pygame.init()
@@ -86,6 +86,7 @@ class App:
 def main(argv):
     theApp = App()
     theApp.on_execute()
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])

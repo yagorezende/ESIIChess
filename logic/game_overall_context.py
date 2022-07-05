@@ -38,5 +38,11 @@ class GameOverallContext(metaclass=SingletonMeta):
     def set_opponent(self, opponent: str):
         self._against = opponent
 
+    def set_opponent_as_IA(self):
+        self.set_opponent(IA)
+
+    def set_opponent_as_multiplayer(self):
+        self.set_opponent(MULTIPLAYER)
+
     def set_sound_option(self, selected):
         self._sound = selected

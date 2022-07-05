@@ -3,15 +3,14 @@ import os
 from typing import Dict, List
 
 import pygame
-from logic.const import TILE_SIZE, Status
+
+from logic.bot import Bot
+from logic.const import BOARD_MATRIX_1, BOARD_MATRIX_2, SAVE_FOLDER, TILE_SIZE, Status
 from logic.game_overall_context import GameOverallContext
 from logic.rcp_command import RetrieveChosenPiece
-from logic.const import BOARD_MATRIX_1, BOARD_MATRIX_2, SAVE_FOLDER, TILE_SIZE, Status
 from logic.referee import Referee
-from logic.bot import Bot
-from logic.tools import count_material_advantage, letter_to_color, show_board_matrix
+from logic.tools import count_material_advantage, letter_to_color
 from logic.tools import show_board_matrix
-
 from ui.board import BoardTile, ChessPiece
 from ui.screens.navigator import Navigator
 from ui.screens.piece_selection import PieceSelection
@@ -42,6 +41,8 @@ class Controller:
         self._PP_COUNTER_VALUE = 1
         self._pp_counter_until_piece_selection = self._PP_COUNTER_VALUE
         self._pp_look_promotion = False
+        self.board_edge = TILE_SIZE * 8
+        self.infos = pygame.image.load("assets/images/Commands.png").convert_alpha()
 
     def init_board(self):
         # add tiles
@@ -60,21 +61,25 @@ class Controller:
         piece = self.pieces[self.selected]
         piece_pos = piece.get_board_pos()
         piece.has_moved = True  # update instance
+        white_bottom = GameOverallContext().get_color() == 'w'
+        factor = 1 if white_bottom else - 1
 
         if piece.type == 'k':
             rook = None
             displacement = c - piece_pos[1]
-            if displacement == 2:  # the player is trying a small castle
-                self.board_matrix[r][c - 1] = self.board_matrix[r][c + 1]  # update matrix
-                self.board_matrix[r][c + 1] = None  # update matrix
-                rook = self.pieces[self.board_matrix[r][c - 1]]
-                rook.move(((c - 1) * TILE_SIZE, r * TILE_SIZE))
+            if displacement == 2 and white_bottom or displacement == -2 and not white_bottom:  # the player is trying a small castle
+                # if white_bottom:
+                self.board_matrix[r][c - factor] = self.board_matrix[r][c + factor]  # update matrix
+                self.board_matrix[r][c + factor] = None  # update matrix
+                rook = self.pieces[self.board_matrix[r][c - factor]]
+                rook.move(((c - factor) * TILE_SIZE, r * TILE_SIZE))
                 rook.has_moved = True
-            elif displacement == -2:  # the player is trying a big castle
-                self.board_matrix[r][c + 1] = self.board_matrix[r][c - 2]  # update matrix
-                self.board_matrix[r][c - 2] = None  # update matrix
-                rook = self.pieces[self.board_matrix[r][c + 1]]
-                rook.move(((c + 1) * TILE_SIZE, r * TILE_SIZE))
+            elif displacement == -2 and GameOverallContext().get_color() == 'w' \
+                    or displacement == 2 and GameOverallContext().get_color() == 'b':  # the player is trying a big castle
+                self.board_matrix[r][c + factor] = self.board_matrix[r][c - 2*factor]  # update matrix
+                self.board_matrix[r][c - 2*factor] = None  # update matrix
+                rook = self.pieces[self.board_matrix[r][c + factor]]
+                rook.move(((c + factor) * TILE_SIZE, r * TILE_SIZE))
                 rook.has_moved = True
         elif piece.type == 'p':  # update instance
             if abs(r - piece_pos[0]) == 2:  # double step
@@ -141,8 +146,8 @@ class Controller:
             self.load_game()
         elif key == 'i':
             self.show_info()
-        # elif key == 'b':
-        #     self.load_game('previous')
+        elif key == 'q':
+            Navigator().close_actual_screen()
         return None
 
     def manage_move(self, move) -> None:
@@ -175,6 +180,7 @@ class Controller:
 
     def handle_red_light(self):
         kings_place = {'b': 4, 'w': 5}[GameOverallContext().get_color()]
+
         if self.referee.status == Status.CHECK or self.referee.status == Status.CHECKMATE:
             x, y = self.pieces[f"{self.referee.turn_color}k{kings_place}"].get_board_pos()
             self.grid[y * 8 + x].turn_red()
@@ -196,12 +202,44 @@ class Controller:
         return None
 
     def on_render(self) -> None:
+        dead_offset = {'b': 0, 'w': 0}
+        Navigator().get_surface().fill((29, 30, 42))
         for tile in self.grid:
             Navigator().get_surface().blit(*tile.render())
         for piece in self.pieces.values():
             if piece.active:
                 Navigator().get_surface().blit(*piece.render())
+            else:
+                Navigator().get_surface().blit(*self.render_dead_piece(piece, dead_offset[piece.color]))
+                dead_offset[piece.color] += 1
+        Navigator().get_surface().blit(self.infos,
+                                       (self.board_edge + 12, self.board_edge / 2 - self.infos.get_height() / 2 - 50))
         return
+
+    def _process_dead_piece_place(self, sprite: pygame.Surface, index: int):
+        edge = TILE_SIZE * 8
+        padding_x = 22  # 22 of padding on x-axis
+        padding_y = 5
+        row_capacity = 4
+        # index = x+y
+        x = index % row_capacity
+        y = index // row_capacity
+        return padding_x + edge + (x * sprite.get_width()), padding_y + y * sprite.get_height()
+
+    def render_dead_piece(self, piece: ChessPiece, index=0):
+        rectx = piece.sprite.get_width() * .5
+        recty = piece.sprite.get_height() * .5
+        sprite = pygame.transform.scale(piece.sprite, (rectx, recty))
+        x, y = self._process_dead_piece_place(sprite, index)
+
+        if GameOverallContext().is_white_bottom():
+            if piece.color != "w":
+                y += TILE_SIZE * 5
+        else:
+            if piece.color != "b":
+                y += TILE_SIZE * 5
+
+        return sprite, (x, y)
 
     def handle_highlight_hint(self, target: str, turnoff: bool = False, pos: tuple = None) -> None:
         if target == self.selected:
@@ -279,6 +317,10 @@ class Controller:
         self._PP_COUNTER_VALUE = 1
         self._pp_counter_until_piece_selection = self._PP_COUNTER_VALUE
         self._pp_look_promotion = False
+
+        for piece in self.grid:
+            piece.turn_light(False)
+
         return None
 
     def get_state(self) -> dict:
@@ -297,7 +339,8 @@ class Controller:
             'pieces': aux,
             'multiplayer': self.multiplayer,
             'referee': self.referee.get_state(),
-            'bot': self.bot.get_state()
+            'bot': self.bot.get_state(),
+            'color': GameOverallContext().get_color()
         }
 
     def set_state(self, state) -> None:
@@ -305,6 +348,11 @@ class Controller:
         Loads state.
         """
         aux: Dict[ChessPiece] = state['pieces']
+        GameOverallContext().set_color(state['color'])
+        if state['multiplayer']:
+            GameOverallContext().set_opponent_as_multiplayer()
+        else:
+            GameOverallContext().set_opponent_as_IA()
         removable = list(self.pieces.keys())
         for key in removable:
             if not key in aux.keys():
@@ -346,7 +394,10 @@ class Controller:
     def restart(self) -> None:
         self.pieces.clear()
         self.load_pieces()
-        self.board_matrix = [row.copy() for row in BOARD_MATRIX_1]
+        if GameOverallContext().is_white_bottom():
+            self.board_matrix = [row.copy() for row in BOARD_MATRIX_1]
+        else:
+            self.board_matrix = [row.copy() for row in BOARD_MATRIX_2]
         self.referee = Referee(self.board_matrix, self.pieces)
         self.bot = Bot(
             level=self.bot.level,
@@ -367,17 +418,21 @@ class Controller:
             order.reverse()
         for i in range(8):
             # white
-            self.pieces[player+'p' + str(i + 1)] = ChessPiece(x=i * TILE_SIZE, y=6 * TILE_SIZE, offset=self.offset, color=player)
+            self.pieces[player + 'p' + str(i + 1)] = ChessPiece(x=i * TILE_SIZE, y=6 * TILE_SIZE, offset=self.offset,
+                                                                color=player)
             try:
-                self.pieces[player + order[i] + str(i + 1)] = ChessPiece(type=order[i], x=i * TILE_SIZE, y=7 * TILE_SIZE,
-                                                                      offset=self.offset, color=player)
+                self.pieces[player + order[i] + str(i + 1)] = ChessPiece(type=order[i], x=i * TILE_SIZE,
+                                                                         y=7 * TILE_SIZE,
+                                                                         offset=self.offset, color=player)
             except Exception as e:
                 print(f"Could not import w{order[i]}.png")
             # black
-            self.pieces[opponent+'p' + str(i + 1)] = ChessPiece(color=opponent, x=i * TILE_SIZE, y=1 * TILE_SIZE, offset=self.offset)
+            self.pieces[opponent + 'p' + str(i + 1)] = ChessPiece(color=opponent, x=i * TILE_SIZE, y=1 * TILE_SIZE,
+                                                                  offset=self.offset)
             try:
-                self.pieces[opponent + order[i] + str(i + 1)] = ChessPiece(color=opponent, type=order[i], x=i * TILE_SIZE,
-                                                                      y=0 * TILE_SIZE, offset=self.offset)
+                self.pieces[opponent + order[i] + str(i + 1)] = ChessPiece(color=opponent, type=order[i],
+                                                                           x=i * TILE_SIZE,
+                                                                           y=0 * TILE_SIZE, offset=self.offset)
             except Exception as e:
                 print(f"Could not import b{order[i]}.png")
         return None

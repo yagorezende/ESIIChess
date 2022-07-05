@@ -90,6 +90,7 @@ class SettingsContainer(GenericWidget):
 
         self.widgets = [self.white_card_button, self.black_card_button, self.random_card_button, self.IA_checkbox,
                         self.multiplayer_checkbox]
+        self._mark_selected()
 
     def _mark_selected(self):
         if GameOverallContext().get_color() == "w":

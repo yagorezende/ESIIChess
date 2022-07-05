@@ -9,3 +9,4 @@ tests/output/
 #
 .coverage
 lcov.info
+*save.json
