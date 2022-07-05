@@ -10,25 +10,15 @@ import logic.referee
 
 class TestTurnConfig(NamedTuple):
     turn_color: str
-    k_pawn1: str
-    pawn1_exist: bool
-    pawn1_active: bool
-    pawn1_has_jumped: bool
-    k_pawn2: str
-    pawn2_exist: bool
-    pawn2_active: bool
-    pawn2_has_jumped: bool
-    pieces: Dict[str, ui.board.ChessPiece]
+    turn_counter: int
+    rushed_pawn: Union[Tuple[int, int], None]
+    board: List[List[Union[str, None]]]
 
 
 class TestTurnResult(NamedTuple):
     turn_color: str
-    pawn1_exist: bool
-    pawn1_active: Union[bool, None]
-    pawn1_has_jumped: Union[bool, None]
-    pawn2_exist: bool
-    pawn2_active: Union[bool, None]
-    pawn2_has_jumped: Union[bool, None]
+    turn_counter: int
+    rushed_pawn: Union[Tuple[int, int], None]
 
 
 class TestMatInsufInput(NamedTuple):
@@ -42,7 +32,7 @@ class TestMatInsufInput(NamedTuple):
 
 class TestCheckThreatInput(NamedTuple):  # TODO
     pos: Tuple[int, int]
-    enemy_color: str
+    turn_color: str
     # NOTE - bool(turn_color == bottom_color)
     bottomup_orientation: Callable[[], bool]
     board_matrix: List[List[Union[str, None]]]
@@ -54,11 +44,8 @@ class TestGetKingMovesInput(NamedTuple):
     enemy_color: str
     king_moved: bool
     king_threatened: List[bool]
-
     get_delta_moves: List[Tuple[int, int]]
     board: List[List[Union[str, None]]]
-    # NOTE - piece color, type, has_moved
-    # pieces: Dict[str, ui.board.ChessPiece]
 
 
 class TestReferee(unittest.TestCase):
@@ -81,11 +68,26 @@ class TestReferee(unittest.TestCase):
         self.referee = None
         return None
 
-    def _check_enemy_presence(self, pos, enemy_color) -> bool:
-        return 0 <= pos[0] < 8 and 0 <= pos[1] < 8 and self.referee.board_matrix[pos[0]][pos[1]] and self.referee.board_matrix[pos[0]][pos[1]][0] == enemy_color
+    def _check_enemy_presence(self, pos: Tuple[int, int]) -> bool:
+        enemy_color = 'w'
+        if self.referee.turn_color == 'w':
+            enemy_color = 'b'
+        # NOTE - pos[0] is inside rows
+        cond = (0 <= pos[0] < 8)
+        # NOTE - pos[0] is inside colums
+        cond = cond and (0 <= pos[1] < 8)
+        # NOTE - pos is not empty
+        cond = cond and self.referee.board_matrix[pos[0]][pos[1]] is not None
+        # NOTE - piece on pos have the enemy color
+        cond = cond and \
+            self.referee.board_matrix[pos[0]][pos[1]][0] == enemy_color
+        return cond
 
     def _check_void(self, pos) -> bool:
-        return 0 <= pos[0] < 8 and 0 <= pos[1] < 8 and not self.referee.board_matrix[pos[0]][pos[1]]
+        cond = 0 <= pos[0] < 8
+        cond = cond and 0 <= pos[1] < 8
+        cond = cond and not self.referee.board_matrix[pos[0]][pos[1]]
+        return cond
 
     def _add_tuples(self, t0, t1) -> Tuple[int, int]:
         return (t0[0]+t1[0], t0[1]+t1[1])
@@ -94,221 +96,93 @@ class TestReferee(unittest.TestCase):
         # NOTE - Change turn to oponent and also prevent en passants out of the right turn.
         # --- SECTION - CONFIGURE TEST
         runs: List[Tuple[TestTurnResult, TestTurnConfig]] = []
-        # NOTE (0): - w -> b; without a b pawn;
+        # NOTE (0): - b -> w; without rushed pawn
         runs.append((
             # NOTE - expected
             TestTurnResult(
-                'b',
-                pawn1_exist=False, pawn1_active=None, pawn1_has_jumped=None,
-                pawn2_exist=True, pawn2_active=True, pawn2_has_jumped=True),
-            # NOTE - "params"
-            TestTurnConfig(
                 turn_color='w',
-                k_pawn1='bp1',
-                pawn1_exist=False, pawn1_active=False, pawn1_has_jumped=False,
-                k_pawn2='wp1',
-                pawn2_exist=True, pawn2_active=True, pawn2_has_jumped=True,
-                pieces=self._test_turn_load_pieces([
-                    [None] * 8,
-                    [None] * 8,
-                    [None] * 8,
-                    [None, 'bp1', *[None]*6],
-                    [None] * 8,
-                    [None] * 8,
-                    ['wp1', *[None] * 7],
-                    [None] * 8]))
-        ))
-        # NOTE (1): w -> b; with a b pawn active;
-        runs.append((
-            # NOTE - expected
-            TestTurnResult(
-                'b',
-                pawn1_exist=True, pawn1_active=True, pawn1_has_jumped=False,
-                pawn2_exist=True, pawn2_active=True, pawn2_has_jumped=True),
-            # NOTE - "params"
-            TestTurnConfig(
-                turn_color='w',
-                k_pawn1='bp1',
-                pawn1_exist=True, pawn1_active=True, pawn1_has_jumped=False,
-                k_pawn2='wp1',
-                pawn2_exist=True, pawn2_active=True, pawn2_has_jumped=True,
-                pieces=self._test_turn_load_pieces([
-                    [None] * 8,
-                    [None] * 8,
-                    [None] * 8,
-                    [None, 'bp1', *[None]*6],
-                    [None] * 8,
-                    [None] * 8,
-                    ['wp1', *[None] * 7],
-                    [None] * 8]))
-        ))
-        # NOTE (2): w -> b; with a b pawn active and has jumped;
-        runs.append((
-            # NOTE - expected
-            TestTurnResult(
-                'b',
-                pawn1_exist=True, pawn1_active=True, pawn1_has_jumped=False,
-                pawn2_exist=True, pawn2_active=True, pawn2_has_jumped=True),
-            # NOTE - "params"
-            TestTurnConfig(
-                turn_color='w',
-                k_pawn1='bp1',
-                pawn1_exist=True, pawn1_active=True, pawn1_has_jumped=True,
-                k_pawn2='wp1',
-                pawn2_exist=True, pawn2_active=True, pawn2_has_jumped=True,
-                pieces=self._test_turn_load_pieces([
-                    [None] * 8,
-                    [None] * 8,
-                    [None] * 8,
-                    [None, 'bp1', *[None]*6],
-                    [None] * 8,
-                    [None] * 8,
-                    ['wp1', *[None] * 7],
-                    [None] * 8]))
-        ))
-        # NOTE (3): b -> w; without a w pawn
-        runs.append((
-            # NOTE - expected
-            TestTurnResult(
-                'w',
-                pawn1_exist=True, pawn1_active=True, pawn1_has_jumped=True,
-                pawn2_exist=False, pawn2_active=None, pawn2_has_jumped=None),
+                turn_counter=1,
+                rushed_pawn=None),
             # NOTE - "params"
             TestTurnConfig(
                 turn_color='b',
-                k_pawn1='bp1',
-                pawn1_exist=True, pawn1_active=True, pawn1_has_jumped=True,
-                k_pawn2='wp1',
-                pawn2_exist=False, pawn2_active=False, pawn2_has_jumped=False,
-                pieces=self._test_turn_load_pieces([
-                    [None] * 8,
-                    [None] * 8,
-                    [None] * 8,
-                    [None, 'bp1', *[None]*6],
-                    [None] * 8,
-                    [None] * 8,
-                    ['wp1', *[None] * 7],
-                    [None] * 8]))
+                turn_counter=0,
+                rushed_pawn=None,
+                board=[[None]*8]*8)
         ))
-        # NOTE (4): b -> w; with a w pawn active
+        # NOTE (1): - w -> b; without rushed pawn
         runs.append((
             # NOTE - expected
             TestTurnResult(
-                'w',
-                pawn1_exist=True, pawn1_active=True, pawn1_has_jumped=True,
-                pawn2_exist=True, pawn2_active=True, pawn2_has_jumped=False),
+                turn_color='b',
+                turn_counter=1,
+                rushed_pawn=None),
             # NOTE - "params"
             TestTurnConfig(
-                turn_color='b',
-                k_pawn1='bp1',
-                pawn1_exist=True, pawn1_active=True, pawn1_has_jumped=True,
-                k_pawn2='wp1',
-                pawn2_exist=True, pawn2_active=True, pawn2_has_jumped=False,
-                pieces=self._test_turn_load_pieces([
-                    [None] * 8,
-                    [None] * 8,
-                    [None] * 8,
-                    [None, 'bp1', *[None]*6],
-                    [None] * 8,
-                    [None] * 8,
-                    ['wp1', *[None] * 7],
-                    [None] * 8]))
+                turn_color='w',
+                turn_counter=0,
+                rushed_pawn=None,
+                board=[[None]*8]*8)
         ))
-        # NOTE (5): b -> w; with a w pawn active and has jumped
+        # NOTE (2): - w -> b; with rushed_pawn, board[*rushed_pawn]==None
         runs.append((
             # NOTE - expected
             TestTurnResult(
-                'w',
-                pawn1_exist=True, pawn1_active=True, pawn1_has_jumped=True,
-                pawn2_exist=True, pawn2_active=True, pawn2_has_jumped=False),
+                turn_color='b',
+                turn_counter=1,
+                rushed_pawn=None),
             # NOTE - "params"
             TestTurnConfig(
-                turn_color='b',
-                k_pawn1='bp1',
-                pawn1_exist=True, pawn1_active=True, pawn1_has_jumped=True,
-                k_pawn2='wp1',
-                pawn2_exist=True, pawn2_active=True, pawn2_has_jumped=True,
-                pieces=self._test_turn_load_pieces([
-                    [None] * 8,
-                    [None] * 8,
-                    [None] * 8,
-                    [None, 'bp1', *[None]*6],
-                    [None] * 8,
-                    [None] * 8,
-                    ['wp1', *[None] * 7],
-                    [None] * 8]))
+                turn_color='w',
+                turn_counter=0,
+                rushed_pawn=(0, 1),
+                board=[[None]*8]*8)
         ))
-
+        # NOTE (3): - w -> b; with rushed_pawn, board[*rushed_pawn]=='bp2'
+        runs.append((
+            # NOTE - expected
+            TestTurnResult(
+                turn_color='b',
+                turn_counter=1,
+                rushed_pawn=None),
+            # NOTE - "params"
+            TestTurnConfig(
+                turn_color='w',
+                turn_counter=0,
+                rushed_pawn=(3, 1),
+                board=[
+                    [None]*8, [None]*8, [None]*8,
+                    [None, 'bp2', None, None, None, None, None, None],
+                    [None]*8, [None]*8, [None]*8, [None]*8])
+        ))
     # --- !SECTION - CONFIGURE TEST
     # --- SECTION - TEST
         # STUB - self.referee.update_status
-        with mock.patch.object(self.referee, 'update_status') as update_status_mock:
-            update_status_mock.return_value = None
+        with mock.patch.multiple(
+                self.referee, spec=True,
+                update_status=lambda: None,
+                enemy_color=lambda: 'b'if self.referee.turn_color == 'w' else 'w'):
             for i in range(len(runs)):
                 with self.subTest(i=i):
                     self._configure_test_turn(runs[i][1])
                 # --- SECTION - beeing tested
                     self.referee.turn()
                 # --- !SECTION
-                    result = self._get_test_turn_result(
-                        runs[i][1].k_pawn1, runs[i][1].k_pawn2)
+                    result = TestTurnResult(
+                        turn_color=self.referee.turn_color,
+                        turn_counter=self.referee.turn_counter,
+                        rushed_pawn=self.referee.rushed_pawn)
                     self.assertEqual(result, runs[i][0])  # NOTE - compare
     # --- !SECTION - TEST
         return None
 
-    def _test_turn_load_pieces(self, board: List[List[Union[str, None]]]) -> Dict[str, ui.board.ChessPiece]:
-        """
-        Load stubs to replace ChessPieces.
-        """
-        pieces = {}
-        for row in board:
-            for piece in row:
-                if piece:
-                    # STUB - ui.board.ChessPiece
-                    piece_mock = mock.create_autospec(
-                        ui.board.ChessPiece, color=piece[0], type=piece[1])
-                    # NOTE - default values for piece
-                    piece_mock.active = True
-                    piece_mock.has_jumped = False
-                    pieces[piece] = piece_mock
-        return pieces
-
     def _configure_test_turn(self, config: TestTurnConfig) -> None:
-        """
-        Change referee attributes that influence which independent path is taken
-        when running `turn` method.
-        """
         self.referee.turn_color = config.turn_color
-        self.referee.pieces = config.pieces
+        self.referee.turn_counter = config.turn_counter
+        self.referee.rushed_pawn = config.rushed_pawn
+        self.referee.board_matrix = config.board
 
-        pawn1 = self.referee.pieces[config.k_pawn1]
-        pawn1.active = config.pawn1_active
-        pawn1.has_jumped = config.pawn1_has_jumped
-        if not config.pawn1_exist:
-            self.referee.pieces.pop(config.k_pawn1, None)
-
-        pawn2 = self.referee.pieces[config.k_pawn2]
-        pawn2.active = config.pawn2_active
-        pawn2.has_jumped = config.pawn2_has_jumped
-        if not config.pawn2_exist:
-            self.referee.pieces.pop(config.k_pawn2, None)
-
-    def _get_test_turn_result(self, k_pawn1: str, k_pawn2: str) -> TestTurnResult:
-        """
-        Aggregate the atributes that `turn` method touch.
-        """
-        result_pawn1 = self.referee.pieces.get(k_pawn1)
-        result_pawn2 = self.referee.pieces.get(k_pawn2)
-        return TestTurnResult(
-            turn_color=self.referee.turn_color,
-            pawn1_exist=True if result_pawn1 else False,
-            pawn1_active=result_pawn1.active if result_pawn1 else None,
-            pawn1_has_jumped=result_pawn1.has_jumped if result_pawn1 else None,
-            pawn2_exist=True if result_pawn2 else False,
-            pawn2_active=result_pawn2.active if result_pawn2 else None,
-            pawn2_has_jumped=result_pawn2.has_jumped if result_pawn2 else None)
-
-    def test_material_insufficiency(self) -> None:
+    def test_check_material_insufficiency(self) -> None:
         # --- SECTION - CONFIGURATIONS
         runs: List[Tuple[bool, List[TestMatInsufInput]]] = []
         # NOTE (0): empty board
@@ -405,6 +279,8 @@ class TestReferee(unittest.TestCase):
                 get_square_color.side_effect = \
                     lambda p: 'b' if (p[0] % 2+p[0]*8+p[1]) % 2 else 'w'
                 self.referee.pieces = self._mat_insuf_load_pieces(input_pieces)
+                self.referee.board_matrix = self._mat_insuf_load_board(
+                    self.referee.pieces)
             # --- SECTION - beeing tested
                 result = self.referee.check_material_insufficiency()
             # --- !SECTION - beeing tested
@@ -424,10 +300,16 @@ class TestReferee(unittest.TestCase):
             d[f'{p.color}{p.type}{str(p.id)}'] = piece_mock
         return d
 
+    def _mat_insuf_load_board(self, pieces: Dict[str, ui.board.ChessPiece]):
+        board = []
+        for _ in range(8):
+            board.append([None]*8)
+        for k_piece, piece in pieces.items():
+            r, c = piece.get_board_pos()
+            board[r][c] = k_piece
+        return board
+
     def test_check_threat(self) -> None:
-        '''
-        Test if a position is beeing threatened
-        '''
         # --- SECTION - CONFIGURATION
         runs: List[Tuple[bool, TestCheckThreatInput]] = []
         # NOTE (0) - test not beeing threatened
@@ -435,7 +317,7 @@ class TestReferee(unittest.TestCase):
             False,
             TestCheckThreatInput(
                 pos=(3, 1),
-                enemy_color='w',
+                turn_color='b',
                 bottomup_orientation=lambda: False,
                 board_matrix=[
                     [None]*8,
@@ -451,7 +333,7 @@ class TestReferee(unittest.TestCase):
             True,
             TestCheckThreatInput(
                 pos=(3, 1),
-                enemy_color='b',
+                turn_color='w',
                 bottomup_orientation=lambda: True,
                 board_matrix=[
                     [None]*8,
@@ -467,7 +349,7 @@ class TestReferee(unittest.TestCase):
             True,
             TestCheckThreatInput(
                 pos=(3, 1),
-                enemy_color='w',
+                turn_color='b',
                 bottomup_orientation=lambda: False,
                 board_matrix=[
                     [None]*8,
@@ -483,7 +365,7 @@ class TestReferee(unittest.TestCase):
             True,
             TestCheckThreatInput(
                 pos=(3, 1),
-                enemy_color='w',
+                turn_color='b',
                 bottomup_orientation=lambda: False,
                 board_matrix=[
                     [None, 'wr1', *[None]*6],
@@ -499,7 +381,7 @@ class TestReferee(unittest.TestCase):
             True,
             TestCheckThreatInput(
                 pos=(3, 1),
-                enemy_color='w',
+                turn_color='b',
                 bottomup_orientation=lambda: False,
                 board_matrix=[
                     [None]*8,
@@ -509,13 +391,13 @@ class TestReferee(unittest.TestCase):
                     [None]*8,
                     [None]*8,
                     [None]*8,
-                    [*[None]*5, 'wb6', *[None]*2]])))        # # NOTE () - test not beeing threatened by a ...
+                    [*[None]*5, 'wb6', *[None]*2]])))
         # NOTE (5) - test beeing threatened by a white knight
         runs.append((
             True,
             TestCheckThreatInput(
                 pos=(3, 1),
-                enemy_color='w',
+                turn_color='b',
                 bottomup_orientation=lambda: False,
                 board_matrix=[
                     [None]*8,
@@ -531,7 +413,7 @@ class TestReferee(unittest.TestCase):
             True,
             TestCheckThreatInput(
                 pos=(3, 1),
-                enemy_color='w',
+                turn_color='b',
                 bottomup_orientation=lambda: False,
                 board_matrix=[
                     [None]*8,
@@ -547,7 +429,7 @@ class TestReferee(unittest.TestCase):
             True,
             TestCheckThreatInput(
                 pos=(3, 1),
-                enemy_color='w',
+                turn_color='b',
                 bottomup_orientation=lambda: False,
                 board_matrix=[
                     [None]*8,
@@ -574,11 +456,12 @@ class TestReferee(unittest.TestCase):
                         check_void=self._check_void):
                 # --- !SECTION
                 self.referee.board_matrix = input_config.board_matrix
+                self.referee.turn_color = input_config.turn_color
                 add_tuples.side_effect = self._add_tuples
                 # --- SECTION - beeing tested
                 result = self.referee.check_threat(
-                    pos=input_config.pos,
-                    enemy_color=input_config.enemy_color)
+                    pos=input_config.pos)  # ,
+                # enemy_color=input_config.enemy_color)
                 # --- !SECTION - beeing tested
                 self.assertEqual(expected, result)
         # --- !SECTION - TEST
@@ -695,8 +578,7 @@ class TestReferee(unittest.TestCase):
 
 def suites() -> Dict[ts.TestSuites, List[unittest.TestCase]]:
     return {
-        ts.TestSuites.GAME_LOGIC: [TestReferee('test_turn')],
-        ts.TestSuites.GAME_TIES: [TestReferee('test_material_insufficiency')],
-        ts.TestSuites.SMOKE_TESTING: [TestReferee('test_check_threat')],
-        ts.TestSuites.GAME_LOGIC: [TestReferee('test_get_king_moves')]
+        ts.TestSuites.GAME_LOGIC: [TestReferee('test_turn'), TestReferee('test_get_king_moves')],
+        ts.TestSuites.GAME_TIES: [TestReferee('test_check_material_insufficiency')],
+        ts.TestSuites.SMOKE_TESTING: [TestReferee('test_check_threat')]
     }
