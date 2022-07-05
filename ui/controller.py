@@ -196,12 +196,43 @@ class Controller:
         return None
 
     def on_render(self) -> None:
+        dead_offset = {'b': 0, 'w': 0}
+        Navigator().get_surface().fill((29, 30, 42))
         for tile in self.grid:
             Navigator().get_surface().blit(*tile.render())
         for piece in self.pieces.values():
             if piece.active:
                 Navigator().get_surface().blit(*piece.render())
+            else:
+                Navigator().get_surface().blit(*self.render_dead_piece(piece, dead_offset[piece.color]))
+                dead_offset[piece.color] += 1
+
         return
+
+    def _process_dead_piece_place(self, sprite: pygame.Surface, index: int):
+        edge = TILE_SIZE * 8
+        padding_x = 22  # 22 of padding on x-axis
+        padding_y = 5
+        row_capacity = 4
+        # index = x+y
+        x = index % row_capacity
+        y = index // row_capacity
+        return padding_x + edge + (x * sprite.get_width()), padding_y + y * sprite.get_height()
+
+    def render_dead_piece(self, piece: ChessPiece, index=0):
+        rectx = piece.sprite.get_width() * .5
+        recty = piece.sprite.get_height() * .5
+        sprite = pygame.transform.scale(piece.sprite, (rectx, recty))
+        x, y = self._process_dead_piece_place(sprite, index)
+
+        if GameOverallContext().is_white_bottom():
+            if piece.color != "w":
+                y += TILE_SIZE * 5
+        else:
+            if piece.color != "b":
+                y += TILE_SIZE * 5
+
+        return sprite, (x, y)
 
     def handle_highlight_hint(self, target: str, turnoff: bool = False, pos: tuple = None) -> None:
         if target == self.selected:
@@ -367,17 +398,21 @@ class Controller:
             order.reverse()
         for i in range(8):
             # white
-            self.pieces[player+'p' + str(i + 1)] = ChessPiece(x=i * TILE_SIZE, y=6 * TILE_SIZE, offset=self.offset, color=player)
+            self.pieces[player + 'p' + str(i + 1)] = ChessPiece(x=i * TILE_SIZE, y=6 * TILE_SIZE, offset=self.offset,
+                                                                color=player)
             try:
-                self.pieces[player + order[i] + str(i + 1)] = ChessPiece(type=order[i], x=i * TILE_SIZE, y=7 * TILE_SIZE,
-                                                                      offset=self.offset, color=player)
+                self.pieces[player + order[i] + str(i + 1)] = ChessPiece(type=order[i], x=i * TILE_SIZE,
+                                                                         y=7 * TILE_SIZE,
+                                                                         offset=self.offset, color=player)
             except Exception as e:
                 print(f"Could not import w{order[i]}.png")
             # black
-            self.pieces[opponent+'p' + str(i + 1)] = ChessPiece(color=opponent, x=i * TILE_SIZE, y=1 * TILE_SIZE, offset=self.offset)
+            self.pieces[opponent + 'p' + str(i + 1)] = ChessPiece(color=opponent, x=i * TILE_SIZE, y=1 * TILE_SIZE,
+                                                                  offset=self.offset)
             try:
-                self.pieces[opponent + order[i] + str(i + 1)] = ChessPiece(color=opponent, type=order[i], x=i * TILE_SIZE,
-                                                                      y=0 * TILE_SIZE, offset=self.offset)
+                self.pieces[opponent + order[i] + str(i + 1)] = ChessPiece(color=opponent, type=order[i],
+                                                                           x=i * TILE_SIZE,
+                                                                           y=0 * TILE_SIZE, offset=self.offset)
             except Exception as e:
                 print(f"Could not import b{order[i]}.png")
         return None
