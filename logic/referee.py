@@ -435,12 +435,19 @@ class Referee():
         """
         Returns the pawn key of the pawn ready to be promoted.
         """
+        bottom_color = self.bottom_color
+        top_color = 'w' if bottom_color=='b' else 'b'
         for k, cp in self.pieces.items():
             # NOTE - if piece is pawn
-            if cp.type == 'p' and (
-                    # NOTE - white pawn on top row
-                    cp.color == 'w' and cp.get_board_pos()[0] == 0 or
-                    # NOTE - black pawn on bottom row
-                    cp.color == 'b' and cp.get_board_pos()[0] == 7):
+            is_pawn = cp.type == 'p'
+            # NOTE - pawn on top row
+            c2 = is_pawn and cp.get_board_pos()[0] == 0
+            pawn_top_row = c2 and cp.color != top_color
+            # NOTE - pawn on bottom row
+            c4 = is_pawn and cp.get_board_pos()[0] == 7
+            pawn_bottom_row = c4 and cp.color != bottom_color
+            # NOTE - white pawn on 'black row' or black pwan on 'white row'
+            c6 = pawn_top_row or pawn_bottom_row
+            if c6:
                 return k
         return ''

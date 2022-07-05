@@ -14,6 +14,7 @@ from logic.tools import show_board_matrix
 from ui.board import BoardTile, ChessPiece
 from ui.screens.navigator import Navigator
 from ui.screens.piece_selection import PieceSelection
+from logic.turn_conditions import TurnCondition
 
 
 class Controller:
@@ -38,11 +39,10 @@ class Controller:
         self.selected = None
         self.offset = 0
         self.highlight = []
-        self._PP_COUNTER_VALUE = 1
-        self._pp_counter_until_piece_selection = self._PP_COUNTER_VALUE
-        self._pp_look_promotion = False
+        self._wait_to_open_selection_screen = True
         self.board_edge = TILE_SIZE * 8
         self.infos = pygame.image.load("assets/images/Commands.png").convert_alpha()
+        self.turn_condition = TurnCondition(self.turn)
 
     def init_board(self):
         # add tiles
@@ -119,15 +119,16 @@ class Controller:
                 if move in self.referee.get_possible_moves(self.selected):
                     self.manage_kill(move)
                     self.handle_highlight_hint(None, turnoff=True, pos=(r, c))
-                    self.turn()
+                    self.turn_condition.piece_captured = True
+                    # self.turn()
         elif self.selected:  # click on empty slot, a piece was previously selected
             move = (r, c)
             if move in self.referee.get_possible_moves(self.selected):
                 self.manage_move(move)
                 self.handle_highlight_hint(None, turnoff=True)
-                self.turn()
+                self.turn_condition.piece_moved = True
+                # self.turn()
         self.handle_red_light()
-        self.manage_pawn_promotion()
         return None
 
     def turn(self):
@@ -197,8 +198,13 @@ class Controller:
             else:
                 self.manage_move(action[1])
             self.handle_highlight_hint(None, turnoff=True)
-            self.turn()
+            self.turn_condition.ia_played = True
+            # self.turn()
             self.handle_red_light()
+        if self.turn_condition.board_change():
+            self.manage_pawn_promotion()
+        # NOTE - should exist only one local to pass the turn
+        self.turn_condition.activate_action()
         return None
 
     def on_render(self) -> None:
@@ -260,25 +266,20 @@ class Controller:
         """
         Test if there is a pawn to be promoted, and if there is promote it.
         """
-        # NOTE - look for promotions only after a click event, saving frames;
-        if not self._pp_look_promotion:
-            return
-        # NOTE - handle promotion when counter is on 0
-        if self._pp_counter_until_piece_selection == 0:
-            # NOTE - reset counter
-            self._pp_counter_until_piece_selection = self._PP_COUNTER_VALUE
-            self._pp_look_promotion = False
-
-            pawn_k = self.referee.get_pawn_promote()
-            if (pawn_k):
-                # NOTE - promote to a new type
-                if self.is_bot_turn():
-                    pass  # TODO: implement autopromotion for AI.
-                else:
+        # NOTE - run only between frames after a change and the change of turn
+        pawn_k = self.referee.get_pawn_promote()
+        self.turn_condition.has_pawn_to_promote = pawn_k != ''
+        if (pawn_k):
+            # NOTE - promote to a new type
+            if self.is_bot_turn():
+                self.promote_pawn(pawn_k,'q')
+            else:
+                if self._wait_to_open_selection_screen:
+                    self._wait_to_open_selection_screen = False
+                else :
                     self.open_piece_selection_screen(pawn_k)
-        elif self._pp_counter_until_piece_selection > 0:
-            self._pp_counter_until_piece_selection -= 1
-        return
+                    self._wait_to_open_selection_screen = True
+        return None
 
     def promote_pawn(self, pawn_k: str, new_type: str) -> None:
         """
