@@ -3,15 +3,14 @@ import os
 from typing import Dict, List
 
 import pygame
-from logic.const import TILE_SIZE, Status
+
+from logic.bot import Bot
+from logic.const import BOARD_MATRIX_1, BOARD_MATRIX_2, SAVE_FOLDER, TILE_SIZE, Status
 from logic.game_overall_context import GameOverallContext
 from logic.rcp_command import RetrieveChosenPiece
-from logic.const import BOARD_MATRIX_1, BOARD_MATRIX_2, SAVE_FOLDER, TILE_SIZE, Status
 from logic.referee import Referee
-from logic.bot import Bot
-from logic.tools import count_material_advantage, letter_to_color, show_board_matrix
+from logic.tools import count_material_advantage, letter_to_color
 from logic.tools import show_board_matrix
-
 from ui.board import BoardTile, ChessPiece
 from ui.screens.navigator import Navigator
 from ui.screens.piece_selection import PieceSelection
@@ -62,21 +61,25 @@ class Controller:
         piece = self.pieces[self.selected]
         piece_pos = piece.get_board_pos()
         piece.has_moved = True  # update instance
+        white_bottom = GameOverallContext().get_color() == 'w'
+        factor = 1 if white_bottom else - 1
 
         if piece.type == 'k':
             rook = None
             displacement = c - piece_pos[1]
-            if displacement == 2:  # the player is trying a small castle
-                self.board_matrix[r][c - 1] = self.board_matrix[r][c + 1]  # update matrix
-                self.board_matrix[r][c + 1] = None  # update matrix
-                rook = self.pieces[self.board_matrix[r][c - 1]]
-                rook.move(((c - 1) * TILE_SIZE, r * TILE_SIZE))
+            if displacement == 2 and white_bottom or displacement == -2 and not white_bottom:  # the player is trying a small castle
+                # if white_bottom:
+                self.board_matrix[r][c - factor] = self.board_matrix[r][c + factor]  # update matrix
+                self.board_matrix[r][c + factor] = None  # update matrix
+                rook = self.pieces[self.board_matrix[r][c - factor]]
+                rook.move(((c - factor) * TILE_SIZE, r * TILE_SIZE))
                 rook.has_moved = True
-            elif displacement == -2:  # the player is trying a big castle
-                self.board_matrix[r][c + 1] = self.board_matrix[r][c - 2]  # update matrix
-                self.board_matrix[r][c - 2] = None  # update matrix
-                rook = self.pieces[self.board_matrix[r][c + 1]]
-                rook.move(((c + 1) * TILE_SIZE, r * TILE_SIZE))
+            elif displacement == -2 and GameOverallContext().get_color() == 'w' \
+                    or displacement == 2 and GameOverallContext().get_color() == 'b':  # the player is trying a big castle
+                self.board_matrix[r][c + factor] = self.board_matrix[r][c - 2*factor]  # update matrix
+                self.board_matrix[r][c - 2*factor] = None  # update matrix
+                rook = self.pieces[self.board_matrix[r][c + factor]]
+                rook.move(((c + factor) * TILE_SIZE, r * TILE_SIZE))
                 rook.has_moved = True
         elif piece.type == 'p':  # update instance
             if abs(r - piece_pos[0]) == 2:  # double step
@@ -175,13 +178,8 @@ class Controller:
         ''')
         print()
 
-    def handle_red_light(self, clear=False):
+    def handle_red_light(self):
         kings_place = {'b': 4, 'w': 5}[GameOverallContext().get_color()]
-        if clear:
-            x, y = self.pieces[f"bk{kings_place}"].get_board_pos()
-            self.grid[y * 8 + x].turn_light(False)
-            x, y = self.pieces[f"wk{kings_place}"].get_board_pos()
-            self.grid[y * 8 + x].turn_light(False)
 
         if self.referee.status == Status.CHECK or self.referee.status == Status.CHECKMATE:
             x, y = self.pieces[f"{self.referee.turn_color}k{kings_place}"].get_board_pos()
@@ -319,7 +317,9 @@ class Controller:
         self._PP_COUNTER_VALUE = 1
         self._pp_counter_until_piece_selection = self._PP_COUNTER_VALUE
         self._pp_look_promotion = False
-        self.handle_red_light(clear=True)
+
+        for piece in self.grid:
+            piece.turn_light(False)
 
         return None
 

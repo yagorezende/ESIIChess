@@ -384,24 +384,25 @@ class Referee():
 
         king = self.pieces[self.board_matrix[pos[0]][pos[1]]]
         if not king.has_moved:
+            factor = 1 if GameOverallContext().get_color() == 'w' else -1
             # small castle
-            new_pos, steps = (pos[0], pos[1] + 1), 0
+            new_pos, steps = (pos[0], pos[1] + factor), 0
             while self.check_void(new_pos) and not self.check_threat(new_pos):
-                new_pos = (new_pos[0], new_pos[1] + 1)
+                new_pos = (new_pos[0], new_pos[1] + factor)
                 steps += 1
             if steps == 2 and not self.check_void(new_pos):
                 piece = self.pieces[self.board_matrix[new_pos[0]][new_pos[1]]]
                 if piece.color == self.turn_color and piece.type == 'r' and not piece.has_moved:
-                    space.append((new_pos[0], new_pos[1] - 1))
+                    space.append((new_pos[0], new_pos[1] - factor))
             # big castle
-            new_pos, steps = (pos[0], pos[1] - 1), 0
+            new_pos, steps = (pos[0], pos[1] - factor), 0
             while self.check_void(new_pos) and not self.check_threat(new_pos):
-                new_pos = (new_pos[0], new_pos[1] - 1)
+                new_pos = (new_pos[0], new_pos[1] - factor)
                 steps += 1
             if steps == 3 and not self.check_void(new_pos):
                 piece = self.pieces[self.board_matrix[new_pos[0]][new_pos[1]]]
                 if piece.color == self.turn_color and piece.type == 'r' and not piece.has_moved:
-                    space.append((new_pos[0], new_pos[1] + 2))
+                    space.append((new_pos[0], new_pos[1] + factor*2))
 
         return space
 

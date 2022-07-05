@@ -10,4 +10,4 @@ tests/output/
 *.ps1
 .coverage
 lcov.info
-logic\\gamestate\\save.json
+*save.json

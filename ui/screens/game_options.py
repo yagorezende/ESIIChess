@@ -41,14 +41,6 @@ class GameOptions(gs.GenericScreen):
             options=[names.name.capitalize() for names in sp.Difficulty],
             default=0)
         self.difficulty.active = not self.oponent.selected_option[0] == 0
-        # self.button_continue = TextButton(
-        #     0, 0,
-        #     text='Play',
-        #     bg_color_normal=(30, 127, 30),
-        #     bg_color_hover=(30, 117, 30),
-        #     bg_color_click=(30, 107, 30),
-        #     trbl_padding=(5, 20, 5, 20),
-        #     click_command=StartGameCommand(game_options_screen=self))
 
     def on_enter(self) -> None:
         return None

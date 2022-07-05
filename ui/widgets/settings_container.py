@@ -46,7 +46,6 @@ class SettingsContainer(GenericWidget):
 
         self.white_card_button.selected = True
         self.white_card_button.surface = self.white_card_button.hover_sprite
-        GameOverallContext().set_color('w')
         # Labels
         self.white_card_button_label = pygame.image.load("assets/images/WhitesLabel.png")
         self.blacks_card_button_label = pygame.image.load("assets/images/BlacksLabel.png")
@@ -91,6 +90,7 @@ class SettingsContainer(GenericWidget):
 
         self.widgets = [self.white_card_button, self.black_card_button, self.random_card_button, self.IA_checkbox,
                         self.multiplayer_checkbox]
+        self._mark_selected()
 
     def _mark_selected(self):
         if GameOverallContext().get_color() == "w":
