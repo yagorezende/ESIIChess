@@ -1,3 +1,4 @@
+import sys
 import pygame
 
 from logic.game_overall_context import GameOverallContext
@@ -82,6 +83,9 @@ class App:
         self.on_cleanup()
 
 
-if __name__ == "__main__":
+def main(argv):
     theApp = App()
     theApp.on_execute()
+
+if __name__ == "__main__":
+    main(sys.argv[1:])

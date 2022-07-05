@@ -4,4 +4,10 @@ venv/
 __pycache__/
 **.pyc
 **/__pycache__
+.profiling/
+tests/output/
+#
+*.ps1
+.coverage
+lcov.info
 logic\\gamestate\\save.json
