@@ -198,7 +198,7 @@ class Controller:
         self.handle_endgame()
         if self.referee.check_termination():
             return None
-        if self.is_bot_turn():
+        if self.is_bot_turn() and not self.turn_condition.ia_played:
             action = self.bot.get_action()
             self.selected = self.board_matrix[action[0][0]][action[0][1]]
             if self.board_matrix[action[1][0]][action[1][1]]:
