@@ -12,6 +12,7 @@ from logic.referee import Referee
 from logic.tools import count_material_advantage, letter_to_color
 from logic.tools import show_board_matrix
 from ui.board import BoardTile, ChessPiece
+from ui.screens.endgame_screen import EndGameScreen
 from ui.screens.navigator import Navigator
 from ui.screens.piece_selection import PieceSelection
 from logic.turn_conditions import TurnCondition
@@ -57,7 +58,6 @@ class Controller:
         return None
 
     def transform(self, r, c):
-
         piece = self.pieces[self.selected]
         piece_pos = piece.get_board_pos()
         piece.has_moved = True  # update instance
@@ -76,8 +76,8 @@ class Controller:
                 rook.has_moved = True
             elif displacement == -2 and GameOverallContext().get_color() == 'w' \
                     or displacement == 2 and GameOverallContext().get_color() == 'b':  # the player is trying a big castle
-                self.board_matrix[r][c + factor] = self.board_matrix[r][c - 2*factor]  # update matrix
-                self.board_matrix[r][c - 2*factor] = None  # update matrix
+                self.board_matrix[r][c + factor] = self.board_matrix[r][c - 2 * factor]  # update matrix
+                self.board_matrix[r][c - 2 * factor] = None  # update matrix
                 rook = self.pieces[self.board_matrix[r][c + factor]]
                 rook.move(((c + factor) * TILE_SIZE, r * TILE_SIZE))
                 rook.has_moved = True
@@ -128,13 +128,20 @@ class Controller:
                 self.handle_highlight_hint(None, turnoff=True)
                 self.turn_condition.piece_moved = True
                 # self.turn()
-        self.handle_red_light()
         return None
 
     def turn(self):
         self.selected = None
         self.referee.turn()
+        self.handle_red_light()
         return None
+
+    def handle_endgame(self):
+        if self.referee.status == Status.CHECKMATE:
+            Navigator().show(EndGameScreen(Navigator().get_surface(), self.referee.turn_color))
+        elif self.referee.status in [Status.DRAW_MATERIAL, Status.DRAW_REPETITION,
+                                     Status.DRAW_PROGRESSION, Status.DRAW_STALEMATE]:
+            Navigator().show(EndGameScreen(Navigator().get_surface(), 'draw'))
 
     def on_pressing(self, key):
         print('-' * 50)
@@ -188,6 +195,7 @@ class Controller:
         return None
 
     def on_loop(self) -> None:
+        self.handle_endgame()
         if self.referee.check_termination():
             return None
         if self.is_bot_turn():
@@ -272,11 +280,11 @@ class Controller:
         if (pawn_k):
             # NOTE - promote to a new type
             if self.is_bot_turn():
-                self.promote_pawn(pawn_k,'q')
+                self.promote_pawn(pawn_k, 'q')
             else:
                 if self._wait_to_open_selection_screen:
                     self._wait_to_open_selection_screen = False
-                else :
+                else:
                     self.open_piece_selection_screen(pawn_k)
                     self._wait_to_open_selection_screen = True
         return None
