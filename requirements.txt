@@ -1,0 +1,7 @@
+autopep8==1.6.0
+coverage==6.4.1
+pycodestyle==2.8.0
+pygame==2.1.2
+snakeviz==2.1.1
+toml==0.10.2
+tornado==6.1

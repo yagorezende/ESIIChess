@@ -1,5 +1,7 @@
 from typing import List
 
+import pygame
+
 from ui.screens.generic_screen import GenericScreen
 from logic.singleton_meta import SingletonMeta
 
@@ -7,7 +9,7 @@ from logic.singleton_meta import SingletonMeta
 class Navigator(metaclass=SingletonMeta):
     def __init__(self) -> None:
         self._stack: List[GenericScreen] = []
-        self._cur_scr: GenericScreen = GenericScreen()
+        self._cur_scr: GenericScreen = GenericScreen(None)
 
     def show(self, screen: GenericScreen) -> None:
         """
@@ -40,9 +42,12 @@ class Navigator(metaclass=SingletonMeta):
         self._cur_scr.on_loop()
         return None
 
-    def on_render(self, scr_surf) -> None:
+    def on_render(self) -> None:
         """
         Renders the current screen on top of the stack.
         """
-        self._cur_scr.on_render(scr_surf)
+        self._cur_scr.on_render()
         return None
+
+    def get_surface(self) -> pygame.Surface:
+        return self._cur_scr.surface

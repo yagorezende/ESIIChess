@@ -31,8 +31,8 @@ TILE_SIZE = 80
 REPETITIONS_FOR_DRAW = 3
 NO_PROGRESSION_LIMIT = 50
 INITIAL_STATE_1 = 'brbnbbbqbkbbbnbrbpbpbpbpbpbpbpbp00000000000000000000000000000000wpwpwpwpwpwpwpwpwrwnwbwqwkwbwnwr'
-INITIAL_STATE_2 = 'wrwnwbwqwkwbwnwrwpwpwpwpwpwpwpwp00000000000000000000000000000000bpbpbpbpbpbpbpbpbrbnbbbqbkbbbnbr'
-SAVE_FOLDER = 'logic\\gamestate\\'
+INITIAL_STATE_2 = 'wrwnwbwkwqwbwnwrwpwpwpwpwpwpwpwp00000000000000000000000000000000bpbpbpbpbpbpbpbpbrbnbbbkbqbbbnbr'
+SAVE_FOLDER = 'logic/gamestate/'
 BOARD_MATRIX_1 = [
     ['br1', 'bn2', 'bb3', 'bq4', 'bk5', 'bb6', 'bn7', 'br8'],
     ['bp1', 'bp2', 'bp3', 'bp4', 'bp5', 'bp6', 'bp7', 'bp8'],
@@ -44,12 +44,12 @@ BOARD_MATRIX_1 = [
     ['wr1', 'wn2', 'wb3', 'wq4', 'wk5', 'wb6', 'wn7', 'wr8']
 ]
 BOARD_MATRIX_2 = [
-    ['wr1', 'wn2', 'wb3', 'wq4', 'wk5', 'wb6', 'wn7', 'wr8'],
+    ['wr1', 'wn2', 'wb3', 'wk4', 'wq5', 'wb6', 'wn7', 'wr8'],
     ['wp1', 'wp2', 'wp3', 'wp4', 'wp5', 'wp6', 'wp7', 'wp8'],
     [None] * 8,
     [None] * 8,
     [None] * 8,
     [None] * 8,
     ['bp1', 'bp2', 'bp3', 'bp4', 'bp5', 'bp6', 'bp7', 'bp8'],
-    ['br1', 'bn2', 'bb3', 'bq4', 'bk5', 'bb6', 'bn7', 'br8']
+    ['br1', 'bn2', 'bb3', 'bk4', 'bq5', 'bb6', 'bn7', 'br8']
 ]
