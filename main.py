@@ -5,6 +5,7 @@ from logic.game_overall_context import GameOverallContext
 from ui.screens.game_menu import GameMenu
 from ui.screens.navigator import Navigator
 
+GAME_TITLE = 'ESII Chess'
 
 class App:
     def __init__(self):
@@ -20,9 +21,7 @@ class App:
 
     def on_init(self):
         pygame.init()
-        self._display_surf = pygame.display.set_mode(
-            self.size, self._display_flags
-        )
+        self._create_display_window(self.size, self._display_flags, GAME_TITLE)
         self._running = True
         self.fps_clock = pygame.time.Clock()
 
@@ -30,6 +29,11 @@ class App:
         self.navigator.show(GameMenu(self._display_surf))
 
         return True
+
+    def _create_display_window(self, size, flags, title: str = '') -> None:
+        self._display_surf = pygame.display.set_mode(size, flags)
+        if title:
+            pygame.display.set_caption(title)
 
     def on_event(self, event):
         pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
@@ -42,7 +46,7 @@ class App:
             else:
                 self._display_flags |= pygame.FULLSCREEN
                 self._display_flags |= pygame.SCALED
-            self._display_surf = pygame.display.set_mode(self.size, self._display_flags)
+            self._create_display_window(self.size, self._display_flags, GAME_TITLE)
             self._is_fullscreen = not self._is_fullscreen
 
     def on_loop(self):

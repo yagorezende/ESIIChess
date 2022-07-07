@@ -7,6 +7,8 @@ import sys
 
 from cx_Freeze import Executable, setup
 
+from main import GAME_TITLE
+
 # Dependencies are automatically detected, but it might need
 # fine tuning.
 base = None
@@ -25,7 +27,7 @@ executables = [
     Executable('main.py', base=base, target_name='ESIIChess')
 ]
 
-setup(name='ESIIChess',
+setup(name=GAME_TITLE,
       version='1.0',
       description='A chess game developed for the "Software Engineering 2" class.',
       options={'build_exe': build_options},
