@@ -1,7 +1,11 @@
 autopep8==1.6.0
 coverage==6.4.1
+cx-Freeze==6.11.1
+lief==0.12.1
+packaging==21.3
 pycodestyle==2.8.0
 pygame==2.1.2
+pyparsing==3.0.9
 snakeviz==2.1.1
 toml==0.10.2
 tornado==6.1
