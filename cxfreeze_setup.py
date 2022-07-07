@@ -24,7 +24,7 @@ if sys.platform == 'win32':
     build_options['include_msvcr'] = True
 
 executables = [
-    Executable('main.py', base=base, target_name='ESIIChess')
+    Executable('main.py', base=base, target_name=GAME_TITLE.replace(' ',''))
 ]
 
 setup(name=GAME_TITLE,
