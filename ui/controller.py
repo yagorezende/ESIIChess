@@ -385,6 +385,8 @@ class Controller:
         return None
 
     def save_game(self, filename: str = 'save') -> None:
+        if not os.path.isdir(SAVE_FOLDER):
+            os.makedirs(SAVE_FOLDER)
         with open(SAVE_FOLDER + filename + '.json', 'w') as file:
             json.dump(self.get_state(), file, indent=4)
         print('Game state saved.')
