@@ -128,11 +128,20 @@ class Controller:
                 self.handle_highlight_hint(None, turnoff=True)
                 self.turn_condition.piece_moved = True
                 # self.turn()
+        self.handle_red_light()
         return None
 
     def turn(self):
         self.selected = None
+        # NOTE - check if king with current turn_color still in danger
+        self.referee.update_status()
+        # NOTE - update the tile under the king with current turn_color
+        self.handle_red_light()
+        # NOTE - pass turn
         self.referee.turn()
+        # NOTE - check if king with current turn_color is in danger (already done inside referee.turn)
+        # #self.referee.update_status()#
+        # NOTE - update the tile under the king with current turn_color
         self.handle_red_light()
         return None
 
@@ -189,9 +198,12 @@ class Controller:
     def handle_red_light(self):
         kings_place = {'b': 4, 'w': 5}[GameOverallContext().get_color()]
 
+        x, y = self.pieces[f"{self.referee.turn_color}k{kings_place}"].get_board_pos()
+        tile = self.grid[y * 8 + x]
         if self.referee.status == Status.CHECK or self.referee.status == Status.CHECKMATE:
-            x, y = self.pieces[f"{self.referee.turn_color}k{kings_place}"].get_board_pos()
-            self.grid[y * 8 + x].turn_red()
+            tile.turn_red()
+        elif tile.sprite is tile.danger_sprite:
+            tile.turn_light(False)
         return None
 
     def on_loop(self) -> None:
