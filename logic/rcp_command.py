@@ -15,5 +15,4 @@ class RetrieveChosenPiece(GenericCommand):
 
     def execute(self) -> None:
         self._controller.promote_pawn(self._pawn_k, self._screen.selected_piece)
-        self._controller.check_status()
         return None

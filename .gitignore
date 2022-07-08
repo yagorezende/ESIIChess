@@ -4,3 +4,9 @@ venv/
 __pycache__/
 **.pyc
 **/__pycache__
+.profiling/
+tests/output/
+#
+.coverage
+lcov.info
+*save.json
