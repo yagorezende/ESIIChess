@@ -2,7 +2,7 @@
 
 This project was born as a college work in a Software Engineering class.
 
-In order to run the game, you only have to click on the exe file according to your OS.
+In order to run the game, you only have to click on the exe file according to your OS. Download [here](https://github.com/yagorezende/ESIIChess/releases/tag/v-1.0.0-LTS).
 
 The main menu is quite intuitive, and there are also some commands on the right pannel you see during the game. By the end of a match, a message is shown, and you can click on the screen to make it transparent, or press ENTER to return to menu.
 
