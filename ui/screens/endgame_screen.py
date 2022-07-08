@@ -12,7 +12,7 @@ class EndGameScreen(GenericScreen):
         :param result: str containing the result: w|b|draw
         """
         super().__init__(surface)
-        print(f"------>", result, type(result))
+        # print(f"------>", result, type(result))
         if result == 'b':
             self.banner = pygame.image.load("assets/images/WhiteWins.png").convert_alpha()
         elif result == 'w':
